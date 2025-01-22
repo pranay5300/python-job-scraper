@@ -1,0 +1,6 @@
+{
+    "terminal.integrated.commandsToSkipShell": [
+        "paste"
+    ],
+    "terminal.integrated.sendKeybindingsToShell": true
+}
