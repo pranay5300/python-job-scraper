@@ -105,6 +105,11 @@ def download_excel():
             "location_weight": float(request.args.get("overall_location_weight", 0))
         }
 
+        # Convert sub-weights to floats
+        roles = [(role, float(weight)) for role, weight in roles]
+        companies = [(company, float(weight)) for company, weight in companies]
+        locations = [(location, float(weight)) for location, weight in locations]
+
         # Validate overall weights sum to 100
         if sum(overall_weights.values()) != 100:
             return jsonify({"error": "Overall weights for companies, roles, and locations must sum to 100%."}), 400
@@ -141,5 +146,6 @@ def download_excel():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
