@@ -3,18 +3,63 @@ from flask_cors import CORS
 import pandas as pd
 import os
 import json
+import requests
+from bs4 import BeautifulSoup
+import time
+import random
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-# Mock function to simulate job scraping (replace this with real scraping or database queries)
-def mock_scrape_jobs(company, role, location, job_type):
-    return [
-        {"Job Title": f"{role} Engineer", "Company Name": company, "Location": location, "Job Link": "http://example.com/job1"},
-        {"Job Title": f"{role} Manager", "Company Name": company, "Location": location, "Job Link": "http://example.com/job2"},
-        {"Job Title": "Software Developer", "Company Name": "Tech Corp", "Location": "Remote", "Job Link": "http://example.com/job3"},
-    ]
+# Function to scrape LinkedIn jobs
+def scrape_linkedin_jobs(company, role, location, job_type):
+    try:
+        base_url = "https://www.linkedin.com/jobs/search/"
+        params = {
+            'keywords': f"{role} {company} {job_type}",
+            'location': location,
+            'trk': 'public_jobs_jobs-search-bar_search-submit'
+        }
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+
+        response = requests.get(base_url, params=params, headers=headers, timeout=15)
+
+        if response.status_code != 200:
+            print(f"Failed to fetch LinkedIn page: {response.status_code}")
+            return []
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Parse job cards
+        job_cards = soup.find_all('div', class_='base-search-card')
+        jobs = []
+        for card in job_cards:
+            try:
+                title_elem = card.find('h3', class_='base-search-card__title')
+                company_elem = card.find('h4', class_='base-search-card__subtitle')
+                location_elem = card.find('span', class_='job-search-card__location')
+                link_elem = card.find('a', class_='base-card__full-link')
+
+                jobs.append({
+                    "Job Title": title_elem.get_text(strip=True) if title_elem else "N/A",
+                    "Company Name": company_elem.get_text(strip=True) if company_elem else "N/A",
+                    "Location": location_elem.get_text(strip=True) if location_elem else "N/A",
+                    "Job Link": link_elem['href'].strip() if link_elem else "N/A"
+                })
+
+                # Introduce a delay to avoid being flagged
+                time.sleep(random.uniform(1, 2))
+            except Exception as e:
+                print(f"Error parsing job card: {e}")
+                continue
+
+        return jobs
+    except Exception as e:
+        print(f"Error scraping LinkedIn: {e}")
+        return []
 
 # Function to calculate job match scores
 def rank_jobs(jobs, weights, role, location, company):
@@ -67,15 +112,20 @@ def download_excel():
             if entity_total_weight != 100:
                 return jsonify({"error": f"{entity_name.capitalize()} weights must sum up to 100%. Current total: {entity_total_weight}"}), 400
 
-        # Get job data (replace mock function with actual scraping or database query)
-        jobs = mock_scrape_jobs("test company", "test role", "test location", "full-time")
+        # Aggregate all jobs
+        all_jobs = []
+        for company in companies:
+            for role in roles:
+                for location in locations:
+                    scraped_jobs = scrape_linkedin_jobs(company["company"], role["role"], location["location"], "full-time")
+                    all_jobs.extend(scraped_jobs)
 
         # Check if jobs were found
-        if not jobs:
+        if not all_jobs:
             return jsonify({"error": "No jobs found"}), 404
 
         # Rank jobs based on weights
-        ranked_jobs = rank_jobs(jobs, weights, "test role", "test location", "test company")
+        ranked_jobs = rank_jobs(all_jobs, weights, roles[0]["role"], locations[0]["location"], companies[0]["company"])
 
         # Save job data to Excel
         file_path = "job_data.xlsx"
