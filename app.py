@@ -5,15 +5,18 @@ import os
 import json
 import requests
 from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor
 import time
 import random
+from functools import lru_cache
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
 # Function to scrape LinkedIn jobs
-def scrape_linkedin_jobs(company, role, location, job_type):
+@lru_cache(maxsize=128)
+def scrape_linkedin_jobs_cached(company, role, location, job_type):
     try:
         base_url = "https://www.linkedin.com/jobs/search/"
         params = {
@@ -60,6 +63,11 @@ def scrape_linkedin_jobs(company, role, location, job_type):
     except Exception as e:
         print(f"Error scraping LinkedIn: {e}")
         return []
+
+# Wrapper to allow caching
+@lru_cache(maxsize=128)
+def scrape_linkedin_jobs(company, role, location, job_type):
+    return scrape_linkedin_jobs_cached(company, role, location, job_type)
 
 # Function to calculate job match scores
 def calculate_score(job, companies, roles, locations, weights):
@@ -121,13 +129,20 @@ def download_excel():
             if entity_total_weight != 100:
                 return jsonify({"error": f"{entity_name.capitalize()} weights must sum up to 100%. Current total: {entity_total_weight}"}), 400
 
-        # Aggregate all jobs
+        # Aggregate all jobs using parallel processing
+        def scrape_jobs(company, role, location):
+            return scrape_linkedin_jobs(company, role, location, "full-time")
+
         all_jobs = []
-        for company in companies:
-            for role in roles:
-                for location in locations:
-                    scraped_jobs = scrape_linkedin_jobs(company["company"], role["role"], location["location"], "full-time")
-                    all_jobs.extend(scraped_jobs)
+        with ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(scrape_jobs, company["company"], role["role"], location["location"])
+                for company in companies
+                for role in roles
+                for location in locations
+            ]
+            for future in futures:
+                all_jobs.extend(future.result())
 
         # Check if jobs were found
         if not all_jobs:
