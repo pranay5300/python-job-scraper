@@ -62,24 +62,33 @@ def scrape_linkedin_jobs(company, role, location, job_type):
         return []
 
 # Function to calculate job match scores
-def rank_jobs(jobs, weights, role, location, company):
-    def calculate_score(job):
-        # Scoring based on matches
-        company_match = 1 if company.lower() in job["Company Name"].lower() else 0
-        role_match = 1 if role.lower() in job["Job Title"].lower() else 0
-        location_match = 1 if location.lower() in job["Location"].lower() else 0
+def calculate_score(job, companies, roles, locations, weights):
+    # Compute scores for each component
+    company_score = max(
+        (float(company["weight"]) / 100) if company["company"].lower() in job["Company Name"].lower() else 0
+        for company in companies
+    )
+    role_score = max(
+        (float(role["weight"]) / 100) if role["role"].lower() in job["Job Title"].lower() else 0
+        for role in roles
+    )
+    location_score = max(
+        (float(location["weight"]) / 100) if location["location"].lower() in job["Location"].lower() else 0
+        for location in locations
+    )
 
-        # Weighted score
-        return (
-            company_match * weights["company_weight"] +
-            role_match * weights["role_weight"] +
-            location_match * weights["location_weight"]
-        )
+    # Calculate weighted total score
+    total_score = (
+        company_score * weights["company_weight"] +
+        role_score * weights["role_weight"] +
+        location_score * weights["location_weight"]
+    )
+    return total_score
 
-    # Add scores to jobs and sort by score
+# Function to rank jobs
+def rank_jobs(jobs, companies, roles, locations, weights):
     for job in jobs:
-        job["Score"] = calculate_score(job)
-
+        job["Score"] = calculate_score(job, companies, roles, locations, weights)
     return sorted(jobs, key=lambda x: x["Score"], reverse=True)
 
 # API endpoint to generate and download Excel
@@ -125,7 +134,7 @@ def download_excel():
             return jsonify({"error": "No jobs found"}), 404
 
         # Rank jobs based on weights
-        ranked_jobs = rank_jobs(all_jobs, weights, roles[0]["role"], locations[0]["location"], companies[0]["company"])
+        ranked_jobs = rank_jobs(all_jobs, companies, roles, locations, weights)
 
         # Save job data to Excel
         file_path = "job_data.xlsx"
