@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import pandas as pd
 import os
+import json
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -41,34 +42,40 @@ def rank_jobs(jobs, weights, role, location, company):
 def download_excel():
     try:
         # Extract query parameters
-        company = request.args.get("company", "").strip()
-        role = request.args.get("role", "").strip()
-        location = request.args.get("location", "").strip()
-        job_type = request.args.get("jobType", "").strip()
-        role_weight = float(request.args.get("role_weight", 0))
-        location_weight = float(request.args.get("location_weight", 0))
-        company_weight = float(request.args.get("company_weight", 0))
+        companies = json.loads(request.args.get("companies", "[]"))
+        roles = json.loads(request.args.get("roles", "[]"))
+        locations = json.loads(request.args.get("locations", "[]"))
+        overall_company_weight = float(request.args.get("overall_company_weight", 0))
+        overall_role_weight = float(request.args.get("overall_role_weight", 0))
+        overall_location_weight = float(request.args.get("overall_location_weight", 0))
 
-        # Validate weights
-        if role_weight + location_weight + company_weight != 100:
-            return jsonify({"error": "Weights must sum up to 100%"}), 400
+        # Validate overall weights
+        total_weight = overall_company_weight + overall_role_weight + overall_location_weight
+        if total_weight != 100:
+            return jsonify({"error": f"Overall weights must sum up to 100%. Current total: {total_weight}"}), 400
 
         # Normalize weights
         weights = {
-            "role_weight": role_weight / 100,
-            "location_weight": location_weight / 100,
-            "company_weight": company_weight / 100
+            "company_weight": overall_company_weight / 100,
+            "role_weight": overall_role_weight / 100,
+            "location_weight": overall_location_weight / 100
         }
 
+        # Validate individual weights for companies, roles, and locations
+        for entity_list, entity_name in zip([companies, roles, locations], ["companies", "roles", "locations"]):
+            entity_total_weight = sum(float(e.get("weight", 0)) for e in entity_list)
+            if entity_total_weight != 100:
+                return jsonify({"error": f"{entity_name.capitalize()} weights must sum up to 100%. Current total: {entity_total_weight}"}), 400
+
         # Get job data (replace mock function with actual scraping or database query)
-        jobs = mock_scrape_jobs(company, role, location, job_type)
+        jobs = mock_scrape_jobs("test company", "test role", "test location", "full-time")
 
         # Check if jobs were found
         if not jobs:
             return jsonify({"error": "No jobs found"}), 404
 
         # Rank jobs based on weights
-        ranked_jobs = rank_jobs(jobs, weights, role, location, company)
+        ranked_jobs = rank_jobs(jobs, weights, "test role", "test location", "test company")
 
         # Save job data to Excel
         file_path = "job_data.xlsx"
@@ -78,7 +85,7 @@ def download_excel():
         # Return the Excel file
         return send_file(file_path, as_attachment=True, download_name="job_data.xlsx")
     except Exception as e:
-        return jsonify({"error": f"Error generating Excel: {e}"}), 500
+        return jsonify({"error": f"Error processing request: {str(e)}"}), 500
     finally:
         # Cleanup the generated file
         if os.path.exists("job_data.xlsx"):
