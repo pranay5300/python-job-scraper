@@ -67,23 +67,18 @@ def scrape_linkedin_jobs(company, role, location, job_type, page=1):
 # Function to calculate job match scores
 def rank_jobs(jobs, roles, companies, locations, overall_weights):
     def calculate_score(job):
-        company_score = 0
-        for company, sub_weight in companies:
-            if company.lower() in job["Company Name"].lower():
-                company_score += overall_weights["company_weight"] * (sub_weight / 100)
+        # Compute role, company, and location scores
+        role_score = sum(weight for role, weight in roles if role.lower() in job["Job Title"].lower())
+        company_score = sum(weight for company, weight in companies if company.lower() in job["Company Name"].lower())
+        location_score = sum(weight for location, weight in locations if location.lower() in job["Location"].lower())
 
-        role_score = 0
-        for role, sub_weight in roles:
-            if role.lower() in job["Job Title"].lower():
-                role_score += overall_weights["role_weight"] * (sub_weight / 100)
-
-        location_score = 0
-        for location, sub_weight in locations:
-            if location.lower() in job["Location"].lower():
-                location_score += overall_weights["location_weight"] * (sub_weight / 100)
-
-        # Total weighted score
-        return company_score + role_score + location_score
+        # Weighted score
+        score = (
+            overall_weights["role_weight"] * role_score +
+            overall_weights["company_weight"] * company_score +
+            overall_weights["location_weight"] * location_score
+        )
+        return score
 
     # Add a score to each job and sort by score
     for job in jobs:
@@ -105,10 +100,13 @@ def download_excel():
             "location_weight": float(request.args.get("overall_location_weight", 0))
         }
 
-        # Convert sub-weights to floats
-        roles = [(role, float(weight)) for role, weight in roles]
-        companies = [(company, float(weight)) for company, weight in companies]
-        locations = [(location, float(weight)) for location, weight in locations]
+        # Convert sub-weights to floats with error handling
+        try:
+            roles = [(role["role"], float(role["weight"])) for role in roles]
+            companies = [(company["company"], float(company["weight"])) for company in companies]
+            locations = [(location["location"], float(location["weight"])) for location in locations]
+        except ValueError as e:
+            return jsonify({"error": f"Invalid weight format. All weights must be numeric. Details: {str(e)}"}), 400
 
         # Validate overall weights sum to 100
         if sum(overall_weights.values()) != 100:
@@ -146,6 +144,3 @@ def download_excel():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-
-
-
