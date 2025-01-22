@@ -64,24 +64,26 @@ def scrape_linkedin_jobs(company, role, location, job_type, page=1):
         print(f"Error scraping LinkedIn: {e}")
         return []
 
-# Function to rank jobs based on weights
-def rank_jobs(jobs, roles, companies, locations):
+# Function to calculate job match scores
+def rank_jobs(jobs, roles, companies, locations, overall_weights):
     def calculate_score(job):
-        role_score = max(
-            (weight for role, weight in roles if role.lower() in job["Job Title"].lower()),
-            default=0
-        )
-        company_score = max(
-            (weight for company, weight in companies if company.lower() in job["Company Name"].lower()),
-            default=0
-        )
-        location_score = max(
-            (weight for location, weight in locations if location.lower() in job["Location"].lower()),
-            default=0
-        )
+        company_score = 0
+        for company, sub_weight in companies:
+            if company.lower() in job["Company Name"].lower():
+                company_score += overall_weights["company_weight"] * (sub_weight / 100)
+
+        role_score = 0
+        for role, sub_weight in roles:
+            if role.lower() in job["Job Title"].lower():
+                role_score += overall_weights["role_weight"] * (sub_weight / 100)
+
+        location_score = 0
+        for location, sub_weight in locations:
+            if location.lower() in job["Location"].lower():
+                location_score += overall_weights["location_weight"] * (sub_weight / 100)
 
         # Total weighted score
-        return role_score + company_score + location_score
+        return company_score + role_score + location_score
 
     # Add a score to each job and sort by score
     for job in jobs:
@@ -97,20 +99,27 @@ def download_excel():
         roles = json.loads(request.args.get("roles", "[]"))
         companies = json.loads(request.args.get("companies", "[]"))
         locations = json.loads(request.args.get("locations", "[]"))
+        overall_weights = {
+            "company_weight": float(request.args.get("overall_company_weight", 0)),
+            "role_weight": float(request.args.get("overall_role_weight", 0)),
+            "location_weight": float(request.args.get("overall_location_weight", 0))
+        }
 
-        # Validate that weights sum up to 100 for each category
-        role_weights = [weight for _, weight in roles]
-        company_weights = [weight for _, weight in companies]
-        location_weights = [weight for _, weight in locations]
+        # Validate overall weights sum to 100
+        if sum(overall_weights.values()) != 100:
+            return jsonify({"error": "Overall weights for companies, roles, and locations must sum to 100%."}), 400
 
-        if sum(role_weights) != 100 or sum(company_weights) != 100 or sum(location_weights) != 100:
-            return jsonify({"error": "Weights for roles, companies, and locations must each sum up to 100%."}), 400
+        # Validate sub-weights sum to 100 for each category
+        if sum([weight for _, weight in roles]) != 100 or \
+           sum([weight for _, weight in companies]) != 100 or \
+           sum([weight for _, weight in locations]) != 100:
+            return jsonify({"error": "Sub-weights for companies, roles, and locations must each sum to 100%."}), 400
 
         # Scrape jobs for all combinations
         all_jobs = []
-        for company, company_weight in companies:
-            for role, role_weight in roles:
-                for location, location_weight in locations:
+        for company, _ in companies:
+            for role, _ in roles:
+                for location, _ in locations:
                     jobs = scrape_linkedin_jobs(company, role, location, job_type="")
                     all_jobs.extend(jobs)
 
@@ -118,7 +127,7 @@ def download_excel():
         unique_jobs = [dict(t) for t in {tuple(d.items()) for d in all_jobs}]
 
         # Rank jobs based on weights
-        ranked_jobs = rank_jobs(unique_jobs, roles, companies, locations)
+        ranked_jobs = rank_jobs(unique_jobs, roles, companies, locations, overall_weights)
 
         # Save job data to Excel
         df = pd.DataFrame(ranked_jobs)
@@ -132,4 +141,5 @@ def download_excel():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
