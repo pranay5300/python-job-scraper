@@ -4,50 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Aggregator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4ebe1;
+            padding: 20px;
+        }
+        h1, h3 {
+            color: #4b2e83;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, select {
+            margin-bottom: 15px;
+            padding: 8px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4b2e83;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #362259;
+        }
+    </style>
 </head>
 <body>
     <h1>Job Aggregator</h1>
     <form id="jobForm">
-        <h2>Target Companies</h2>
-        <label>Company 1:</label>
-        <input type="text" id="company1" placeholder="e.g., Google">
-        <input type="number" id="company1Weight" placeholder="Weight %" min="0" max="100"><br>
-        <label>Company 2:</label>
-        <input type="text" id="company2" placeholder="e.g., Amazon">
-        <input type="number" id="company2Weight" placeholder="Weight %" min="0" max="100"><br>
-        <label>Company 3:</label>
-        <input type="text" id="company3" placeholder="e.g., Microsoft">
-        <input type="number" id="company3Weight" placeholder="Weight %" min="0" max="100"><br>
+        <h3>Target Companies</h3>
+        <div>
+            <label>Company 1:</label>
+            <input type="text" id="company1" value="Google">
+            <input type="number" id="companyWeight1" value="50">
 
-        <h2>Target Roles</h2>
-        <label>Role 1:</label>
-        <input type="text" id="role1" placeholder="e.g., Product Manager">
-        <input type="number" id="role1Weight" placeholder="Weight %" min="0" max="100"><br>
-        <label>Role 2:</label>
-        <input type="text" id="role2" placeholder="e.g., Marketing">
-        <input type="number" id="role2Weight" placeholder="Weight %" min="0" max="100"><br>
-        <label>Role 3:</label>
-        <input type="text" id="role3" placeholder="e.g., Supply Chain">
-        <input type="number" id="role3Weight" placeholder="Weight %" min="0" max="100"><br>
+            <label>Company 2:</label>
+            <input type="text" id="company2" value="Amazon">
+            <input type="number" id="companyWeight2" value="50">
+        </div>
+        <label>Overall Company Weight:</label>
+        <input type="number" id="overallCompanyWeight" value="33">
 
-        <h2>Preferred Locations</h2>
-        <label>Location 1:</label>
-        <input type="text" id="location1" placeholder="e.g., California">
-        <input type="number" id="location1Weight" placeholder="Weight %" min="0" max="100"><br>
-        <label>Location 2:</label>
-        <input type="text" id="location2" placeholder="e.g., Texas">
-        <input type="number" id="location2Weight" placeholder="Weight %" min="0" max="100"><br>
-        <label>Location 3:</label>
-        <input type="text" id="location3" placeholder="e.g., Washington">
-        <input type="number" id="location3Weight" placeholder="Weight %" min="0" max="100"><br>
+        <h3>Target Roles</h3>
+        <div>
+            <label>Role 1:</label>
+            <input type="text" id="role1" value="Software Engineer">
+            <input type="number" id="roleWeight1" value="50">
 
-        <h2>Overall Weights</h2>
-        <label>Overall Company Weight (%):</label>
-        <input type="number" id="overallCompanyWeight" min="0" max="100"><br>
-        <label>Overall Role Weight (%):</label>
-        <input type="number" id="overallRoleWeight" min="0" max="100"><br>
-        <label>Overall Location Weight (%):</label>
-        <input type="number" id="overallLocationWeight" min="0" max="100"><br>
+            <label>Role 2:</label>
+            <input type="text" id="role2" value="Product Manager">
+            <input type="number" id="roleWeight2" value="50">
+        </div>
+        <label>Overall Role Weight:</label>
+        <input type="number" id="overallRoleWeight" value="33">
+
+        <h3>Preferred Locations</h3>
+        <div>
+            <label>Location 1:</label>
+            <input type="text" id="location1" value="California">
+            <input type="number" id="locationWeight1" value="50">
+
+            <label>Location 2:</label>
+            <input type="text" id="location2" value="Texas">
+            <input type="number" id="locationWeight2" value="50">
+        </div>
+        <label>Overall Location Weight:</label>
+        <input type="number" id="overallLocationWeight" value="34">
+
+        <h3>Job Type</h3>
+        <div>
+            <label>Select Job Type:</label>
+            <select id="jobType">
+                <option value="full-time" selected>Full-Time</option>
+                <option value="part-time">Part-Time</option>
+                <option value="internship">Internship</option>
+            </select>
+        </div>
 
         <button type="submit">Generate Excel</button>
     </form>
@@ -56,27 +103,31 @@
         document.getElementById("jobForm").addEventListener("submit", async function (event) {
             event.preventDefault();
 
+            // Collecting companies
             const companies = [
-                { company: document.getElementById("company1").value, weight: document.getElementById("company1Weight").value },
-                { company: document.getElementById("company2").value, weight: document.getElementById("company2Weight").value },
-                { company: document.getElementById("company3").value, weight: document.getElementById("company3Weight").value },
+                { company: document.getElementById("company1").value, weight: document.getElementById("companyWeight1").value },
+                { company: document.getElementById("company2").value, weight: document.getElementById("companyWeight2").value },
             ];
 
+            // Collecting roles
             const roles = [
-                { role: document.getElementById("role1").value, weight: document.getElementById("role1Weight").value },
-                { role: document.getElementById("role2").value, weight: document.getElementById("role2Weight").value },
-                { role: document.getElementById("role3").value, weight: document.getElementById("role3Weight").value },
+                { role: document.getElementById("role1").value, weight: document.getElementById("roleWeight1").value },
+                { role: document.getElementById("role2").value, weight: document.getElementById("roleWeight2").value },
             ];
 
+            // Collecting locations
             const locations = [
-                { location: document.getElementById("location1").value, weight: document.getElementById("location1Weight").value },
-                { location: document.getElementById("location2").value, weight: document.getElementById("location2Weight").value },
-                { location: document.getElementById("location3").value, weight: document.getElementById("location3Weight").value },
+                { location: document.getElementById("location1").value, weight: document.getElementById("locationWeight1").value },
+                { location: document.getElementById("location2").value, weight: document.getElementById("locationWeight2").value },
             ];
 
+            // Overall weights
             const overallCompanyWeight = document.getElementById("overallCompanyWeight").value;
             const overallRoleWeight = document.getElementById("overallRoleWeight").value;
             const overallLocationWeight = document.getElementById("overallLocationWeight").value;
+
+            // Job type
+            const jobType = document.getElementById("jobType").value;
 
             const params = new URLSearchParams({
                 companies: JSON.stringify(companies),
@@ -85,9 +136,10 @@
                 overall_company_weight: overallCompanyWeight,
                 overall_role_weight: overallRoleWeight,
                 overall_location_weight: overallLocationWeight,
+                job_type: jobType
             });
 
-            const backendUrl = "https://your-backend-url.com"; // Replace with your backend URL
+            const backendUrl = "https://excel-job-data3.onrender.com"; // Replace with your actual backend URL
             const downloadUrl = `${backendUrl}/download_excel?${params}`;
 
             window.location.href = downloadUrl;
@@ -95,6 +147,3 @@
     </script>
 </body>
 </html>
-
-
-
