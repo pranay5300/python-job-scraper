@@ -1,4 +1,27 @@
 {
+  "name": "full_stack_project",
+  "version": "1.0.0",
+  "description": "A full-stack project with React frontend and Flask backend",
+  "main": "index.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "keywords": [
+    "react",
+    "flask",
+    "full-stack"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "axios": "^0.27.2",
+    "react-scripts": "5.0.1"
+  },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
   }
