@@ -19,6 +19,49 @@ const JobForm = () => {
     "Google receives over 3 million job applications every year.",
     "85% of jobs are filled via networking.",
     "The tech industry is projected to grow by 11% in the next decade.",
+    "Amazon is the second-largest employer in the United States.",
+    "Remote jobs have increased by over 91% in the past decade.",
+    "Data Scientist has been named the sexiest job of the 21st century.",
+    "Apple was founded in a garage in Cupertino, California.",
+    "Facebook changed its name to Meta in 2021.",
+    "The first-ever email was sent in 1971.",
+    "Python is the most in-demand programming language.",
+    "Microsoft has over 220,000 employees globally.",
+    "The first website was published in 1991 by Tim Berners-Lee.",
+    "Over 70% of jobs are never posted publicly.",
+    "The world's largest employer is Walmart with over 2 million employees.",
+    "80% of resumes are rejected in less than 11 seconds.",
+    "Tesla’s Gigafactories are among the largest buildings in the world.",
+    "The average salary for a Software Engineer in the US is $110,000.",
+    "Cybersecurity jobs are expected to grow by 31% by 2029.",
+    "Netflix employees enjoy unlimited vacation days.",
+    "The first job board website went live in 1994.",
+    "Over 50% of the global workforce now works remotely at least once a week.",
+    "The tech industry has one of the lowest unemployment rates.",
+    "Google employees are called Googlers.",
+    "IBM was founded over a century ago in 1911.",
+    "SpaceX was the first private company to send astronauts to space.",
+    "The average time to fill a job vacancy is 42 days.",
+    "Amazon Web Services (AWS) powers over 30% of the internet.",
+    "The first LinkedIn post was made in 2003.",
+    "There are over 7 million job openings in the US at any given time.",
+    "Coding bootcamps have a job placement rate of over 80%.",
+    "The highest-paying job in the US is Anesthesiologist.",
+    "The average cost of a bad hire is up to 30% of their annual salary.",
+    "YouTube is the second most visited website in the world.",
+    "The first Apple computer was sold for $666.66.",
+    "Over 1 billion people use Microsoft Office globally.",
+    "There are over 700,000 tech startups worldwide.",
+    "Adobe Photoshop was first released in 1988.",
+    "GitHub has over 100 million repositories.",
+    "Google was initially called BackRub.",
+    "The first smartphone was released in 1992 by IBM.",
+    "The most in-demand soft skill is communication.",
+    "The fastest-growing job in the US is Wind Turbine Technician.",
+    "The tech sector accounts for 10% of the US GDP.",
+    "Slack was originally a gaming company.",
+    "Twitter was founded in 2006 and was originally called Twttr.",
+    "Over 2 million cybersecurity jobs will be unfilled by 2025."
   ];
 
   const handleNoPreferenceChange = (field) => {
@@ -63,7 +106,7 @@ const JobForm = () => {
       overall_location_weight: 34,
     });
 
-    const backendUrl = 'https://excel-job-data3.onrender.com';
+    const backendUrl = 'https://excel-job-data.onrender.com';
     const downloadUrl = `${backendUrl}/download_excel?${params}`;
 
     let triviaIndex = 0;
