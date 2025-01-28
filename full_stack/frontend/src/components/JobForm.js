@@ -106,7 +106,7 @@ const JobForm = () => {
       overall_location_weight: 34,
     });
 
-    const backendUrl = 'https://excel-job-data.onrender.com';
+    const backendUrl = 'https://python-job-scraper.onrender.com';
     const downloadUrl = `${backendUrl}/download_excel?${params}`;
 
     let triviaIndex = 0;
