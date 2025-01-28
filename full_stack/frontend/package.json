@@ -27,5 +27,5 @@
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
   },
-  "homepage": "https://<your-github-username>.github.io/<repository-name>"
+  "homepage": "https://github.com/pranay5300/python-job-scraper.git"
 }
