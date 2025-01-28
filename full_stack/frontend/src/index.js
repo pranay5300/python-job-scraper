@@ -1,10 +1,14 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client'; // Note the use of 'react-dom/client'
-import App from './App'; // Make sure the path to App.js is correct
+import ReactDOM from 'react-dom';
+import './index.css'; // Ensure the path is correct
+import App from './App';
+import reportWebVitals from './reportWebVitals';
 
-const root = ReactDOM.createRoot(document.getElementById('apple')); // Ensure 'root' matches the div ID in your public/index.html
-root.render(
+ReactDOM.render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
+  document.getElementById('root')
 );
+
+reportWebVitals();
