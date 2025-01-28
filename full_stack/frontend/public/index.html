@@ -2,24 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Job Aggregator Application">
+  
   <title>Job Aggregator</title>
-  <link rel="stylesheet" href="index.css"> <!-- Corrected CSS file reference -->
+
+  <!-- Use %PUBLIC_URL% for correct file references -->
+  <link rel="stylesheet" href="%PUBLIC_URL%/index.css">
+
+  <!-- Optional: Add a favicon -->
+  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" type="image/x-icon">
 </head>
 <body>
-  <div id="root"></div> <!-- React will render the app here -->
+  <noscript>You need to enable JavaScript to run this app.</noscript>
   
-  <!-- React and ReactDOM scripts -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" 
-    integrity="sha512-/Zn3YxxPHQ+VjbEmcMeUGf5J4PvVNK8EmWv55D8Q0HqojzxTWUlHGpO3GnXjz74URBhaNJc9H9Dd6+NLHe++wQ==" 
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" 
-    integrity="sha512-/uQQUoAVM79C5QlQyBceHdrcOMfDxP3HTS16FGe3deYcoS0Vczl+5LD6Z3BBErqY02skzpZkgllv2b0n/9zqUA==" 
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- React renders the app here -->
+  <div id="root"></div>
 
-  <!-- Link to your bundled JavaScript file -->
-  <script src="index.js" type="module"></script>
+  <!-- Scripts will be auto-injected by React -->
 </body>
 </html>
