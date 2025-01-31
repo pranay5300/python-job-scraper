@@ -151,7 +151,7 @@ const JobForm = () => {
 
       {!loading && !completed && (
         <form id="jobForm" onSubmit={handleSubmit}>
-          <h1>Job Aggregator</h1>
+          <h1>to jobdatacamp</h1>
           <p>Find your ideal job by prioritizing companies, roles, and locations.</p>
 
           {/* Target Companies */}
