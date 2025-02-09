@@ -3,145 +3,199 @@ from flask_cors import CORS
 import pandas as pd
 import os
 import json
-import requests
-from bs4 import BeautifulSoup
-from concurrent.futures import ThreadPoolExecutor
+from fuzzywuzzy import fuzz
 import time
 import random
+from bs4 import BeautifulSoup
+import requests
+import uuid
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
+from openpyxl import Workbook
 
-# Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-# Function to scrape LinkedIn jobs
+# Configuration
+MAX_RESULTS = 30
+REQUEST_TIMEOUT = 10
+DELAY_RANGE = (1, 3)
+USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+]
+
+# USCIS Google Sheet setup
+H1B_SHEET_URL = "https://docs.google.com/spreadsheets/d/1-pnpCHYRfWLuqFucvv_ryTkhZDR1LRJN/export?format=csv"
+REQUIRED_COLUMNS = ['Company', 'Role', 'H1b Approval 2024', 'H1b Sponsor']
+
 @lru_cache(maxsize=128)
 def scrape_linkedin_jobs_cached(company, role, location, job_type):
     try:
-        base_url = "https://www.linkedin.com/jobs/search/"
+        headers = {"User-Agent": random.choice(USER_AGENTS)}
         params = {
             'keywords': f"{role} {company} {job_type}",
             'location': location,
-            'trk': 'public_jobs_jobs-search-bar_search-submit'
-        }
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            'trk': 'public_jobs_jobs-search-bar_search-submit',
+            'count': 10
         }
 
-        response = requests.get(base_url, params=params, headers=headers, timeout=15)
+        response = requests.get(
+            "https://www.linkedin.com/jobs/search/",
+            params=params,
+            headers=headers,
+            timeout=REQUEST_TIMEOUT
+        )
 
         if response.status_code != 200:
-            print(f"Failed to fetch LinkedIn page: {response.status_code}")
             return []
 
         soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Parse job cards
-        job_cards = soup.find_all('div', class_='base-search-card')
-        jobs = []
-        for card in job_cards:
-            try:
-                title_elem = card.find('h3', class_='base-search-card__title')
-                company_elem = card.find('h4', class_='base-search-card__subtitle')
-                location_elem = card.find('span', class_='job-search-card__location')
-                link_elem = card.find('a', class_='base-card__full-link')
-                work_type_elem = card.find('span', class_='job-search-card__work-type')
-                salary_elem = card.find('span', class_='job-search-card__salary-info')
-
-                jobs.append({
-                    "Job Title": title_elem.get_text(strip=True) if title_elem else "N/A",
-                    "Company Name": company_elem.get_text(strip=True) if company_elem else "N/A",
-                    "Location": location_elem.get_text(strip=True) if location_elem else "N/A",
-                    "Job Link": f'=HYPERLINK("{link_elem["href"].strip()}", "job_link")' if link_elem else "N/A",
-                    "Work Type": work_type_elem.get_text(strip=True) if work_type_elem else "N/A",
-                    "Salary": salary_elem.get_text(strip=True) if salary_elem else "N/A"
-                })
-
-                # Introduce a delay to avoid being flagged
-                time.sleep(random.uniform(1, 2))
-            except Exception as e:
-                print(f"Error parsing job card: {e}")
-                continue
-
-        return jobs
+        return parse_job_cards(soup)
+        
     except Exception as e:
-        print(f"Error scraping LinkedIn: {e}")
+        app.logger.error(f"Scraping Error: {e}")
         return []
 
-# Wrapper to allow caching
 @lru_cache(maxsize=128)
 def scrape_linkedin_jobs(company, role, location, job_type):
     return scrape_linkedin_jobs_cached(company, role, location, job_type)
 
-# Function to calculate job match scores
+def parse_job_cards(soup):
+    jobs = []
+    for card in soup.find_all('div', {'class': 'base-search-card'}):
+        try:
+            jobs.append({
+                "Job Title": card.find('h3', class_='base-search-card__title').get_text(strip=True),
+                "Company Name": card.find('h4', class_='base-search-card__subtitle').get_text(strip=True),
+                "Location": card.find('span', class_='job-search-card__location').get_text(strip=True),
+                "Job Link": card.find('a', class_='base-card__full-link')['href'].strip()
+            })
+        except AttributeError:
+            continue
+        time.sleep(random.uniform(*DELAY_RANGE))
+    return jobs
+
+def embed_job_links(jobs):
+    for job in jobs:
+        job_title = job['Job Title']
+        job_link = job.pop('Job Link')  # Remove and use for hyperlink
+        job['Job Title'] = f'=HYPERLINK("{job_link}", "{job_title}")'
+    return jobs
+
 def calculate_score(job, companies, roles, locations, weights):
-    # Compute scores for each component
     company_score = max(
-        (float(company["weight"]) / 100) if company["company"].lower() in job["Company Name"].lower() else 0
-        for company in companies
+        (float(company["weight"])/100 if company["company"].lower() in job["Company Name"].lower() else 0
+        ) for company in companies
     )
     role_score = max(
-        (float(role["weight"]) / 100) if role["role"].lower() in job["Job Title"].lower() else 0
-        for role in roles
+        (float(role["weight"])/100 if role["role"].lower() in job["Job Title"].lower() else 0
+        ) for role in roles
     )
     location_score = max(
-        (float(location["weight"]) / 100) if location["location"].lower() in job["Location"].lower() else 0
-        for location in locations
+        (float(location["weight"])/100 if location["location"].lower() in job["Location"].lower() else 0
+        ) for location in locations
     )
+    return (company_score * weights["company_weight"] +
+            role_score * weights["role_weight"] +
+            location_score * weights["location_weight"])
 
-    # Calculate weighted total score
-    total_score = (
-        company_score * weights["company_weight"] +
-        role_score * weights["role_weight"] +
-        location_score * weights["location_weight"]
-    )
-    return total_score
-
-# Function to rank jobs
 def rank_jobs(jobs, companies, roles, locations, weights):
     for job in jobs:
         job["Score"] = calculate_score(job, companies, roles, locations, weights)
     return sorted(jobs, key=lambda x: x["Score"], reverse=True)
 
-# API endpoint to generate and download Excel
+def get_h1b_data_for_company(company, role):
+    try:
+        if not hasattr(get_h1b_data_for_company, 'h1b_df'):
+            h1b_df = pd.read_csv(H1B_SHEET_URL)
+            h1b_df = h1b_df[REQUIRED_COLUMNS].dropna()
+            get_h1b_data_for_company.h1b_df = h1b_df
+            
+        # First try exact company match
+        company_matches = get_h1b_data_for_company.h1b_df[
+            get_h1b_data_for_company.h1b_df['Company'].str.lower() == company.lower()
+        ]
+        
+        # If no exact match, try fuzzy matching
+        if company_matches.empty:
+            best_match = None
+            best_score = 0
+            
+            for _, row in get_h1b_data_for_company.h1b_df.iterrows():
+                company_score = fuzz.token_set_ratio(str(company).lower(), str(row['Company']).lower())
+                
+                # Lower threshold for company match only
+                if company_score > 70:  # Adjusted threshold
+                    if best_score < company_score:
+                        best_match = row
+                        best_score = company_score
+        else:
+            best_match = company_matches.iloc[0]
+            
+        return {
+            "H1b Approval 2024": best_match['H1b Approval 2024'] if best_match is not None else "N/A",
+            "H1b Sponsor": best_match['H1b Sponsor'] if best_match is not None else "No"
+        }
+        
+    except Exception as e:
+        app.logger.error(f"H1B Data Error: {e}")
+        return {"H1b Approval 2024": "N/A", "H1b Sponsor": "No"}
+
+def create_excel_with_sorting(jobs, file_path):
+    """Create Excel file with sorting/filtering headers"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Job Data"
+    
+    # Create headers
+    headers = [
+        'Job Title', 'Company Name', 'Location',
+        'H1b Approval 2024', 'H1b Sponsor', 'Score'
+    ]
+    ws.append(headers)
+    
+    # Add data rows
+    for job in jobs:
+        ws.append([
+            job['Job Title'],        # Contains HYPERLINK formula
+            job['Company Name'],
+            job['Location'],
+            job['H1b Approval 2024'],
+            job['H1b Sponsor'],
+            job['Score']
+        ])
+    
+    # Enable sorting/filtering arrows
+    ws.auto_filter.ref = ws.dimensions
+    wb.save(file_path)
+
 @app.route('/download_excel', methods=['GET'])
 def download_excel():
     try:
-        # Extract query parameters
+        # Parse and validate inputs
         companies = json.loads(request.args.get("companies", "[]"))
         roles = json.loads(request.args.get("roles", "[]"))
         locations = json.loads(request.args.get("locations", "[]"))
-        overall_company_weight = float(request.args.get("overall_company_weight", 0))
-        overall_role_weight = float(request.args.get("overall_role_weight", 0))
-        overall_location_weight = float(request.args.get("overall_location_weight", 0))
-        job_type = request.args.get("job_type", "full-time")
-
-        # Validate overall weights
-        total_weight = overall_company_weight + overall_role_weight + overall_location_weight
-        if total_weight != 100:
-            return jsonify({"error": f"Overall weights must sum up to 100%. Current total: {total_weight}"}), 400
-
-        # Normalize weights
         weights = {
-            "company_weight": overall_company_weight / 100,
-            "role_weight": overall_role_weight / 100,
-            "location_weight": overall_location_weight / 100
+            "company_weight": float(request.args.get("overall_company_weight", 33))/100,
+            "role_weight": float(request.args.get("overall_role_weight", 33))/100,
+            "location_weight": float(request.args.get("overall_location_weight", 34))/100
         }
 
-        # Validate individual weights for companies, roles, and locations
-        for entity_list, entity_name in zip([companies, roles, locations], ["companies", "roles", "locations"]):
-            entity_total_weight = sum(float(e.get("weight", 0)) for e in entity_list)
-            if entity_total_weight != 100:
-                return jsonify({"error": f"{entity_name.capitalize()} weights must sum up to 100%. Current total: {entity_total_weight}"}), 400
+        # Validate weights
+        if abs(sum(weights.values()) - 1.0) > 0.001:  # Allow floating point precision
+            return jsonify({"error": "Weights must sum to 100%"}), 400
 
-        # Aggregate all jobs using parallel processing
-        def scrape_jobs(company, role, location):
-            return scrape_linkedin_jobs(company, role, location, job_type)
-
+        # Scrape jobs in parallel
         all_jobs = []
         with ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(scrape_jobs, company["company"], role["role"], location["location"])
+                executor.submit(scrape_linkedin_jobs, 
+                              company["company"], 
+                              role["role"], 
+                              location["location"],
+                              "Full-Time")
                 for company in companies
                 for role in roles
                 for location in locations
@@ -149,26 +203,29 @@ def download_excel():
             for future in futures:
                 all_jobs.extend(future.result())
 
-        # Check if jobs were found
         if not all_jobs:
             return jsonify({"error": "No jobs found"}), 404
 
-        # Rank jobs based on weights
-        ranked_jobs = rank_jobs(all_jobs, companies, roles, locations, weights)
+        # Rank and select top jobs
+        ranked_jobs = rank_jobs(all_jobs, companies, roles, locations, weights)[:MAX_RESULTS]
 
-        # Save job data to Excel
-        file_path = "job_data.xlsx"
-        df = pd.DataFrame(ranked_jobs)
-        df.to_excel(file_path, index=False)
+        # Add H1B data and process links
+        for job in ranked_jobs:
+            job.update(get_h1b_data_for_company(job["Company Name"], job["Job Title"]))
+        ranked_jobs = embed_job_links(ranked_jobs)
 
-        # Return the Excel file
-        return send_file(file_path, as_attachment=True, download_name="job_data.xlsx")
+        # Generate Excel with sorting
+        file_path = f"job_data_{uuid.uuid4()}.xlsx"
+        create_excel_with_sorting(ranked_jobs, file_path)
+
+        return send_file(file_path, as_attachment=True)
+        
     except Exception as e:
-        return jsonify({"error": f"Error processing request: {str(e)}"}), 500
+        app.logger.error(f"Critical Error: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
     finally:
-        # Cleanup the generated file
-        if os.path.exists("job_data.xlsx"):
-            os.remove("job_data.xlsx")
+        if 'file_path' in locals() and os.path.exists(file_path):
+            os.remove(file_path)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000)
