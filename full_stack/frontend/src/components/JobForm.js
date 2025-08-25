@@ -140,142 +140,280 @@ const JobForm = () => {
   };
 
   return (
-    <div className="container">
+    <div className="main-container">
+      {/* Hero Section */}
+      <section className="hero-section">
+        <div className="hero-content">
+          <h1 className="hero-title">Find Your Dream Job</h1>
+          <p className="hero-subtitle">
+            Discover opportunities that match your preferences with our intelligent job matching system
+          </p>
+        </div>
+      </section>
+
       {loading && (
-        <div id="loading">
-          <div className="loader"></div>
-          <p>Please give us 2 minutes to generate your jobs Excel file...</p>
-          <p>{trivia}</p>
+        <div className="loading-overlay">
+          <div className="loading-card">
+            <div className="loader"></div>
+            <h3>Searching for Your Perfect Jobs</h3>
+            <p>Please give us 2 minutes to generate your personalized job recommendations...</p>
+            <div className="trivia-section">
+              <p className="trivia-label">💡 Did you know?</p>
+              <p className="trivia-text">{trivia}</p>
+            </div>
+          </div>
         </div>
       )}
 
       {!loading && !completed && (
-        <form id="jobForm" onSubmit={handleSubmit}>
-          <h1>to jobdatacamp</h1>
-          <p>Find your ideal job by prioritizing companies, roles, and locations.</p>
+        <section className="search-section">
+          <div className="search-container">
+            <div className="search-header">
+              <h2>Customize Your Job Search</h2>
+              <p>Tell us about your preferences and we'll find the best opportunities for you</p>
+            </div>
+            
+            <form className="job-search-form" onSubmit={handleSubmit}>
 
-          {/* Target Companies */}
-          <div className="form-section">
-            <h3>Input Target Companies</h3>
-            <label>Company 1:</label>
-            <input type="text" name="company1" defaultValue="" disabled={noPreference.company} required />
-            <label>Company 2:</label>
-            <input type="text" name="company2" defaultValue="" disabled={noPreference.company} required />
-            <label>Weight Distribution:</label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={companyWeight}
-              onChange={(e) => setCompanyWeight(Number(e.target.value))}
-              disabled={noPreference.company}
-            />
-            <p>
-              {`Company 1 Weight: ${companyWeight}% | Company 2 Weight: ${100 - companyWeight}%`}
-            </p>
-            <label>
-              <input
-                type="checkbox"
-                checked={noPreference.company}
-                onChange={() => handleNoPreferenceChange('company')}
-              />
-              No Preference
-            </label>
+              {/* Target Companies */}
+              <div className="form-card">
+                <div className="card-header">
+                  <span className="card-icon">🏢</span>
+                  <h3>Target Companies</h3>
+                </div>
+                <div className="card-content">
+                  <div className="input-group">
+                    <label className="input-label">Preferred Company</label>
+                    <input 
+                      type="text" 
+                      name="company1" 
+                      className="form-input"
+                      placeholder="e.g., Google, Microsoft, Apple"
+                      disabled={noPreference.company} 
+                      required 
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Alternative Company</label>
+                    <input 
+                      type="text" 
+                      name="company2" 
+                      className="form-input"
+                      placeholder="e.g., Amazon, Meta, Netflix"
+                      disabled={noPreference.company} 
+                      required 
+                    />
+                  </div>
+                  <div className="slider-group">
+                    <label className="input-label">Preference Distribution</label>
+                    <div className="slider-container">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={companyWeight}
+                        className="preference-slider"
+                        onChange={(e) => setCompanyWeight(Number(e.target.value))}
+                        disabled={noPreference.company}
+                      />
+                      <div className="slider-labels">
+                        <span>Primary: {companyWeight}%</span>
+                        <span>Alternative: {100 - companyWeight}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="checkbox-group">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={noPreference.company}
+                        onChange={() => handleNoPreferenceChange('company')}
+                      />
+                      <span className="checkmark"></span>
+                      Open to any company
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Target Roles */}
+              <div className="form-card">
+                <div className="card-header">
+                  <span className="card-icon">💻</span>
+                  <h3>Target Roles</h3>
+                </div>
+                <div className="card-content">
+                  <div className="input-group">
+                    <label className="input-label">Preferred Role</label>
+                    <input 
+                      type="text" 
+                      name="role1" 
+                      className="form-input"
+                      placeholder="e.g., Software Engineer, Data Scientist"
+                      disabled={noPreference.role} 
+                      required 
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Alternative Role</label>
+                    <input 
+                      type="text" 
+                      name="role2" 
+                      className="form-input"
+                      placeholder="e.g., Product Manager, UX Designer"
+                      disabled={noPreference.role} 
+                      required 
+                    />
+                  </div>
+                  <div className="slider-group">
+                    <label className="input-label">Preference Distribution</label>
+                    <div className="slider-container">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={roleWeight}
+                        className="preference-slider"
+                        onChange={(e) => setRoleWeight(Number(e.target.value))}
+                        disabled={noPreference.role}
+                      />
+                      <div className="slider-labels">
+                        <span>Primary: {roleWeight}%</span>
+                        <span>Alternative: {100 - roleWeight}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="checkbox-group">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={noPreference.role}
+                        onChange={() => handleNoPreferenceChange('role')}
+                      />
+                      <span className="checkmark"></span>
+                      Open to any role
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Target Locations */}
+              <div className="form-card">
+                <div className="card-header">
+                  <span className="card-icon">📍</span>
+                  <h3>Target Locations</h3>
+                </div>
+                <div className="card-content">
+                  <div className="input-group">
+                    <label className="input-label">Preferred Location</label>
+                    <input 
+                      type="text" 
+                      name="location1" 
+                      className="form-input"
+                      placeholder="e.g., San Francisco, CA"
+                      disabled={noPreference.location} 
+                      required 
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Alternative Location</label>
+                    <input 
+                      type="text" 
+                      name="location2" 
+                      className="form-input"
+                      placeholder="e.g., New York, NY"
+                      disabled={noPreference.location} 
+                      required 
+                    />
+                  </div>
+                  <div className="slider-group">
+                    <label className="input-label">Preference Distribution</label>
+                    <div className="slider-container">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={locationWeight}
+                        className="preference-slider"
+                        onChange={(e) => setLocationWeight(Number(e.target.value))}
+                        disabled={noPreference.location}
+                      />
+                      <div className="slider-labels">
+                        <span>Primary: {locationWeight}%</span>
+                        <span>Alternative: {100 - locationWeight}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="checkbox-group">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={noPreference.location}
+                        onChange={() => handleNoPreferenceChange('location')}
+                      />
+                      <span className="checkmark"></span>
+                      Open to any location
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Job Type */}
+              <div className="form-card">
+                <div className="card-header">
+                  <span className="card-icon">⏰</span>
+                  <h3>Job Type</h3>
+                </div>
+                <div className="card-content">
+                  <div className="input-group">
+                    <label className="input-label">Employment Type</label>
+                    <select name="jobType" className="form-select" defaultValue="Full-Time">
+                      <option value="Full-Time">Full-Time</option>
+                      <option value="Part-Time">Part-Time</option>
+                      <option value="Internship">Internship</option>
+                      <option value="Contract">Contract</option>
+                      <option value="Remote">Remote</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="submit-section">
+                <button type="submit" className="submit-btn">
+                  <span className="btn-icon">🔍</span>
+                  Find My Perfect Jobs
+                </button>
+                <p className="submit-note">
+                  We'll search through thousands of job listings to find your perfect match
+                </p>
+              </div>
+            </form>
           </div>
-
-          {/* Target Roles */}
-          <div className="form-section">
-            <h3>Input Target Roles</h3>
-            <label>Role 1:</label>
-            <input type="text" name="role1" defaultValue="" disabled={noPreference.role} required />
-            <label>Role 2:</label>
-            <input type="text" name="role2" defaultValue="" disabled={noPreference.role} required />
-            <label>Weight Distribution:</label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={roleWeight}
-              onChange={(e) => setRoleWeight(Number(e.target.value))}
-              disabled={noPreference.role}
-            />
-            <p>
-              {`Role 1 Weight: ${roleWeight}% | Role 2 Weight: ${100 - roleWeight}%`}
-            </p>
-            <label>
-              <input
-                type="checkbox"
-                checked={noPreference.role}
-                onChange={() => handleNoPreferenceChange('role')}
-              />
-              No Preference
-            </label>
-          </div>
-
-          {/* Target Locations */}
-          <div className="form-section">
-            <h3>Input Target Locations(city/state)</h3>
-            <label>Location 1:</label>
-            <input type="text" name="location1" defaultValue="" disabled={noPreference.location} required />
-            <label>Location 2:</label>
-            <input type="text" name="location2" defaultValue="" disabled={noPreference.location} required />
-            <label>Weight Distribution:</label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={locationWeight}
-              onChange={(e) => setLocationWeight(Number(e.target.value))}
-              disabled={noPreference.location}
-            />
-            <p>
-              {`Location 1 Weight: ${locationWeight}% | Location 2 Weight: ${100 - locationWeight}%`}
-            </p>
-            <label>
-              <input
-                type="checkbox"
-                checked={noPreference.location}
-                onChange={() => handleNoPreferenceChange('location')}
-              />
-              No Preference
-            </label>
-          </div>
-
-          {/* Job Type */}
-          <div className="form-section">
-            <h3>Job Type</h3>
-            <label>Select Job Type:</label>
-            <select name="jobType" defaultValue="Full-Time">
-              <option value="Full-Time">Full-Time</option>
-              <option value="Part-Time">Part-Time</option>
-              <option value="Internship">Internship</option>
-            </select>
-          </div>
-
-          <button type="submit">Generate Excel</button>
-        </form>
+        </section>
       )}
 
       {completed && (
-        <div id="conclusion">
-          <p>The file is ready. Please check your downloads section to find your Excel file.</p>
-          <p>
-            Thank you for using Job Aggregator! Would you like to{' '}
-            <button
-              onClick={() => window.location.reload()}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'blue',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-              }}
-            >
-              try again
-            </button>
-            ?
-          </p>
-        </div>
+        <section className="success-section">
+          <div className="success-card">
+            <div className="success-icon">✅</div>
+            <h2>Your Job Search Results Are Ready!</h2>
+            <p className="success-message">
+              We've found personalized job recommendations based on your preferences. 
+              Please check your downloads folder for your Excel file.
+            </p>
+            <div className="success-actions">
+              <button
+                onClick={() => window.location.reload()}
+                className="restart-btn"
+              >
+                🔄 Search Again
+              </button>
+            </div>
+            <p className="thank-you">
+              Thank you for using JobDataCamp! We hope you find your dream job.
+            </p>
+          </div>
+        </section>
       )}
     </div>
   );
