@@ -4,10 +4,12 @@ import sqlite3
 import json
 import random
 import logging
+import io
 from datetime import datetime
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
+from openpyxl import Workbook
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -174,7 +176,7 @@ def root():
 
 @app.route('/download_excel', methods=['GET'])
 def download_excel():
-    """Main job search endpoint."""
+    """Main job search endpoint with Excel generation."""
     try:
         # Get parameters
         companies = request.args.get('companies', '[]')
@@ -201,11 +203,43 @@ def download_excel():
                 h1b_probability = h1b_predictor.predict_probability(company, job['job_title'])
                 job['h1b_probability'] = h1b_probability
         
-        return jsonify({
-            'jobs': jobs,
-            'total_found': len(jobs),
-            'h1b_enabled': include_h1b
-        })
+        # Create Excel file
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Job Matches"
+        
+        # Add headers
+        headers = ['Job Title', 'Company Name', 'Location', 'Job Link', 'Work Type', 'Salary', 'Source']
+        if include_h1b:
+            headers.append('H1B Probability')
+        
+        for col, header in enumerate(headers, 1):
+            ws.cell(row=1, column=col, value=header)
+        
+        # Add job data
+        for row, job in enumerate(jobs, 2):
+            ws.cell(row=row, column=1, value=job['job_title'])
+            ws.cell(row=row, column=2, value=job['company_name'])
+            ws.cell(row=row, column=3, value=job['location'])
+            ws.cell(row=row, column=4, value=job['job_link'])
+            ws.cell(row=row, column=5, value=job['work_type'])
+            ws.cell(row=row, column=6, value=job['salary'])
+            ws.cell(row=row, column=7, value=job['source'])
+            if include_h1b:
+                ws.cell(row=row, column=8, value=f"{job.get('h1b_probability', 'N/A')}%")
+        
+        # Save to memory
+        excel_buffer = io.BytesIO()
+        wb.save(excel_buffer)
+        excel_buffer.seek(0)
+        
+        # Return Excel file
+        return send_file(
+            excel_buffer,
+            as_attachment=True,
+            download_name=f"job_matches_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
         
     except Exception as e:
         logger.error(f"Job search error: {e}")
