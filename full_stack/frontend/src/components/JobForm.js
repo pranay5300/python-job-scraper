@@ -109,7 +109,7 @@ const JobForm = () => {
       job_type: event.target.jobType.value,
     });
 
-    const backendUrl = 'https://python-job-scraper.onrender.com';
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
     const downloadUrl = `${backendUrl}/download_excel?${params}`;
 
     let triviaIndex = 0;
@@ -158,8 +158,19 @@ const JobForm = () => {
         <div className="loading-overlay">
           <div className="loading-card">
             <div className="loader"></div>
-            <h3>Searching for Your Perfect Jobs</h3>
-            <p>Please give us 2 minutes to generate your personalized job recommendations...</p>
+            <h3>{includeH1B ? 'Searching Jobs & Analyzing H1B Sponsorship' : 'Searching for Your Perfect Jobs'}</h3>
+            <p>
+              {includeH1B 
+                ? "Please give us 2 minutes to generate your personalized job recommendations with H1B sponsorship predictions..."
+                : "Please give us 2 minutes to generate your personalized job recommendations..."
+              }
+            </p>
+            {includeH1B && (
+              <div className="h1b-loading-indicator">
+                <span className="h1b-icon">🛂</span>
+                <span>Analyzing H1B sponsorship data from 45+ companies...</span>
+              </div>
+            )}
             <div className="trivia-section">
               <p className="trivia-label">💡 Did you know?</p>
               <p className="trivia-text">{trivia}</p>
@@ -382,25 +393,33 @@ const JobForm = () => {
               </div>
 
               {/* H1B Visa Sponsorship */}
-              <div className="form-card">
+              <div className="form-card h1b-card">
                 <div className="card-header">
                   <span className="card-icon">🛂</span>
-                  <h3>Visa Sponsorship</h3>
+                  <h3>H1B Visa Sponsorship</h3>
                 </div>
                 <div className="card-content">
                   <div className="checkbox-group">
-                    <label className="checkbox-label">
+                    <label className="checkbox-label h1b-checkbox">
                       <input
                         type="checkbox"
                         checked={includeH1B}
                         onChange={(e) => setIncludeH1B(e.target.checked)}
                       />
                       <span className="checkmark"></span>
-                      Include H1B sponsorship prediction
+                      Include H1B sponsorship predictions
                     </label>
-                    <p className="checkbox-description">
-                      When enabled, an additional column will show the probability (%) that each company sponsors H1B visas for the specific role.
-                    </p>
+                    <div className="h1b-info">
+                      <p className="checkbox-description">
+                        💼 <strong>Get AI-powered predictions</strong> for H1B visa sponsorship probability
+                      </p>
+                      <p className="checkbox-description">
+                        📊 Based on historical data from 45+ top companies including Google (95%), Microsoft (94%), Amazon (92%)
+                      </p>
+                      <p className="checkbox-description">
+                        ⚡ <em>Predictions are role-specific and updated with latest sponsorship trends</em>
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -408,10 +427,13 @@ const JobForm = () => {
               <div className="submit-section">
                 <button type="submit" className="submit-btn">
                   <span className="btn-icon">🔍</span>
-                  Find My Perfect Jobs
+                  {includeH1B ? 'Find Jobs with H1B Predictions' : 'Find My Perfect Jobs'}
                 </button>
                 <p className="submit-note">
-                  We'll search through thousands of job listings to find your perfect match
+                  {includeH1B 
+                    ? "We'll search job listings and predict H1B sponsorship probabilities for each company"
+                    : "We'll search through thousands of job listings to find your perfect match"
+                  }
                 </p>
               </div>
             </form>
@@ -423,10 +445,12 @@ const JobForm = () => {
         <section className="success-section">
           <div className="success-card">
             <div className="success-icon">✅</div>
-            <h2>Your Job Search Results Are Ready!</h2>
+            <h2>{includeH1B ? 'Your Jobs with H1B Predictions Are Ready!' : 'Your Job Search Results Are Ready!'}</h2>
             <p className="success-message">
-              We've found personalized job recommendations based on your preferences. 
-              Please check your downloads folder for your Excel file.
+              {includeH1B 
+                ? "We've found personalized job recommendations with H1B sponsorship predictions based on your preferences. Please check your downloads folder for your Excel file with sponsorship probability data."
+                : "We've found personalized job recommendations based on your preferences. Please check your downloads folder for your Excel file."
+              }
             </p>
             <div className="success-actions">
               <button

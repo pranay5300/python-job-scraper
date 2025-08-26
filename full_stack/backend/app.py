@@ -26,7 +26,15 @@ logger = logging.getLogger(__name__)
 # Initialize Flask app
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
-CORS(app)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Configure CORS for development and production
+CORS(app, resources={
+    r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]},
+    r"/download_excel": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]},
+    r"/health": {"origins": "*"},
+    r"/stats": {"origins": "*"}
+})
 
 class FastJobDatabase:
     """Fast in-memory job database with SQLite persistence."""
@@ -431,21 +439,46 @@ def get_stats():
     except:
         return jsonify({"error": "Stats unavailable"}), 500
 
+@app.route('/test_h1b', methods=['GET'])
+def test_h1b():
+    """Test H1B prediction functionality."""
+    try:
+        company = request.args.get('company', 'Google')
+        role = request.args.get('role', 'Software Engineer')
+        
+        prediction = h1b_predictor.predict_probability(company, role)
+        
+        return jsonify({
+            "company": company,
+            "role": role,
+            "h1b_probability": f"{prediction}%",
+            "status": "success"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # Initialize on startup
-@app.before_first_request
 def initialize_app():
     """Initialize the application."""
-    job_db.initialize()
-    logger.info("Fast job API ready!")
+    try:
+        job_db.initialize()
+        logger.info("Fast job API ready!")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to initialize app: {e}")
+        return False
 
 if __name__ == '__main__':
     # Initialize database
-    job_db.initialize()
-    
-    # Run the app
-    app.run(
-        debug=False,
-        host='0.0.0.0',
-        port=5000,
-        threaded=True
-    )
+    if initialize_app():
+        logger.info("Starting Flask server...")
+        # Run the app
+        app.run(
+            debug=False,
+            host='0.0.0.0',
+            port=5000,
+            threaded=True
+        )
+    else:
+        logger.error("Failed to initialize application. Exiting.")
+        sys.exit(1)
