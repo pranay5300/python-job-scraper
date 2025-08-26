@@ -30,10 +30,12 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Configure CORS for development and production
 CORS(app, resources={
-    r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]},
-    r"/download_excel": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]},
+    r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000", "https://jobdatacamp-frontend.onrender.com"]},
+    r"/download_excel": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000", "https://jobdatacamp-frontend.onrender.com"]},
+    r"/": {"origins": "*"},
     r"/health": {"origins": "*"},
-    r"/stats": {"origins": "*"}
+    r"/stats": {"origins": "*"},
+    r"/test_h1b": {"origins": "*"}
 })
 
 class FastJobDatabase:
@@ -320,6 +322,26 @@ class FastJobMatcher:
 job_db = FastJobDatabase()
 h1b_predictor = FastH1BPredictor()
 job_matcher = FastJobMatcher()
+
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint with API information."""
+    return jsonify({
+        "service": "JobDataCamp API",
+        "version": "1.0.0",
+        "status": "healthy",
+        "description": "TAMU Job Search API with H1B Predictions",
+        "endpoints": {
+            "health": "/health",
+            "stats": "/stats", 
+            "test_h1b": "/test_h1b",
+            "download_excel": "/download_excel"
+        },
+        "production_url": "https://python-job-scraper.onrender.com",
+        "documentation": "See DEBUG_GUIDE.md for complete API usage",
+        "frontend_compatible": True,
+        "cors_enabled": True
+    })
 
 @app.route('/download_excel', methods=['GET'])
 def download_excel():

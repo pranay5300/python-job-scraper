@@ -50,6 +50,15 @@ cd /workspace/full_stack/frontend
 if [ ! -f .env ]; then
     echo "📝 Creating .env file..."
     cp .env.example .env
+    echo ""
+    echo "⚙️  ENVIRONMENT CONFIGURATION:"
+    echo "   📁 Created .env file for development"
+    echo "   🌐 Using local backend: http://localhost:5000"
+    echo ""
+    echo "🚀 FOR PRODUCTION DEPLOYMENT:"
+    echo "   📝 Update .env to use: REACT_APP_BACKEND_URL=https://python-job-scraper.onrender.com"
+    echo "   📖 See DEPLOYMENT.md for complete production setup guide"
+    echo ""
 fi
 
 # Install dependencies if needed
