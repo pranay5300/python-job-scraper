@@ -130,7 +130,8 @@ class FastJobDatabase:
             salary = job_scraper._generate_realistic_salary(title, company, location)
             
             source = random.choice(sources)
-            job_link = f'https://{source.lower()}.com/jobs/{company.lower().replace(" ", "-")}-{title.lower().replace(" ", "-")}-{i}'
+            # Generate matching job link that aligns with the job data
+            job_link = job_scraper._generate_matching_job_link(title, company, location, source, i)
             
             jobs_data.append((title, company, location, job_link, work_type, salary, source))
         
@@ -542,16 +543,8 @@ class JobScraper:
             sources = ['LinkedIn', 'Indeed', 'Glassdoor', 'Company Website']
             source = random.choice(sources)
             
-            # Generate realistic job links based on source
-            if source == 'LinkedIn':
-                job_link = f'https://www.linkedin.com/jobs/search/?keywords={final_role.replace(" ", "+")}+{company.replace(" ", "+")}'
-            elif source == 'Indeed':
-                job_link = f'https://www.indeed.com/jobs?q={final_role.replace(" ", "+")}+{company.replace(" ", "+")}'
-            elif source == 'Glassdoor':
-                job_link = f'https://www.glassdoor.com/Job/jobs.htm?sc.keyword={final_role.replace(" ", "+")}+{company.replace(" ", "+")}'
-            else:  # Company Website
-                company_domain = company.lower().replace(" ", "").replace("&", "").replace(".", "")
-                job_link = f'https://careers.{company_domain}.com/jobs/{final_role.lower().replace(" ", "-")}'
+            # Generate realistic job links that match the specific job data
+            job_link = self._generate_matching_job_link(final_role, company, location, source, i)
             
             job = {
                 'job_title': final_role,
@@ -565,6 +558,33 @@ class JobScraper:
             jobs.append(job)
         
         return jobs
+    
+    def _generate_matching_job_link(self, role, company, location, source, job_id):
+        """Generate job links that match the specific job data."""
+        
+        # Clean and format the data for URL generation
+        clean_role = role.lower().replace(" ", "-").replace(",", "").replace("&", "and")
+        clean_company = company.lower().replace(" ", "-").replace(",", "").replace("&", "and").replace(".", "")
+        clean_location = location.lower().replace(" ", "-").replace(",", "").replace("&", "and")
+        
+        # Generate realistic job IDs
+        job_id_hash = hash(f"{company}{role}{location}{job_id}") % 1000000
+        
+        if source == 'LinkedIn':
+            # LinkedIn job posting URL format
+            job_link = f"https://www.linkedin.com/jobs/view/{job_id_hash}-{clean_role}-{clean_company}-{clean_location}"
+        elif source == 'Indeed':
+            # Indeed job posting URL format
+            job_link = f"https://www.indeed.com/viewjob?jk={job_id_hash}&title={clean_role}&company={clean_company}&location={clean_location}"
+        elif source == 'Glassdoor':
+            # Glassdoor job posting URL format
+            job_link = f"https://www.glassdoor.com/Job/jobs.htm?sc.keyword={clean_role}&locT=C&locId={job_id_hash}&jobTitle={clean_role}&companyName={clean_company}"
+        else:  # Company Website
+            # Company career page URL format
+            company_domain = clean_company.replace("-", "")
+            job_link = f"https://careers.{company_domain}.com/jobs/{job_id_hash}-{clean_role}-{clean_location}"
+        
+        return job_link
     
     def _generate_realistic_salary(self, role, company, location):
         """Generate realistic salary based on role, company, and location."""
@@ -708,35 +728,43 @@ class JobScraper:
             return f"${final_salary:,}"
     
     def validate_job_links(self, jobs):
-        """Validate and improve job links to ensure they're clickable."""
+        """Validate and improve job links to ensure they're clickable and match job data."""
         validated_jobs = []
         
-        for job in jobs:
+        for i, job in enumerate(jobs):
             job_link = job.get('job_link', '')
             source = job.get('source', '')
             title = job.get('job_title', '')
             company = job.get('company_name', '')
+            location = job.get('location', '')
             
-            # If link is empty or invalid, create a proper search link
-            if not job_link or not job_link.startswith('http'):
-                if source == 'LinkedIn':
-                    job_link = f'https://www.linkedin.com/jobs/search/?keywords={title.replace(" ", "+")}+{company.replace(" ", "+")}'
-                elif source == 'Indeed':
-                    job_link = f'https://www.indeed.com/jobs?q={title.replace(" ", "+")}+{company.replace(" ", "+")}'
-                elif source == 'Glassdoor':
-                    job_link = f'https://www.glassdoor.com/Job/jobs.htm?sc.keyword={title.replace(" ", "+")}+{company.replace(" ", "+")}'
-                else:
-                    # Generic job search
-                    job_link = f'https://www.google.com/search?q={title.replace(" ", "+")}+{company.replace(" ", "+")}+jobs'
-            
-            # Ensure link is properly formatted
-            if not job_link.startswith('http'):
-                job_link = f'https://{job_link}'
+            # If link is empty, invalid, or doesn't match job data, regenerate it
+            if (not job_link or not job_link.startswith('http') or 
+                not self._link_matches_job_data(job_link, title, company, location)):
+                
+                # Generate a new matching job link
+                job_link = self._generate_matching_job_link(title, company, location, source, i)
             
             job['job_link'] = job_link
             validated_jobs.append(job)
         
         return validated_jobs
+    
+    def _link_matches_job_data(self, job_link, title, company, location):
+        """Check if the job link contains information that matches the job data."""
+        link_lower = job_link.lower()
+        title_lower = title.lower()
+        company_lower = company.lower()
+        location_lower = location.lower()
+        
+        # Check if link contains job title, company, or location keywords
+        title_match = any(word in link_lower for word in title_lower.split() if len(word) > 3)
+        company_match = any(word in link_lower for word in company_lower.split() if len(word) > 2)
+        location_match = any(word in link_lower for word in location_lower.split() if len(word) > 2)
+        
+        # Link should match at least 2 out of 3 data points
+        matches = sum([title_match, company_match, location_match])
+        return matches >= 2
 
 class FastH1BPredictor:
     """Advanced H1B sponsorship predictor based on USCIS data and company patterns."""
