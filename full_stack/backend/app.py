@@ -335,7 +335,8 @@ def root():
             "health": "/health",
             "stats": "/stats", 
             "test_h1b": "/test_h1b",
-            "download_excel": "/download_excel"
+            "download_excel": "/download_excel",
+            "ip_info": "/ip_info"
         },
         "production_url": "https://python-job-scraper.onrender.com",
         "documentation": "See DEBUG_GUIDE.md for complete API usage",
@@ -467,13 +468,50 @@ def test_h1b():
     try:
         company = request.args.get('company', 'Google')
         role = request.args.get('role', 'Software Engineer')
-        
+
         prediction = h1b_predictor.predict_probability(company, role)
-        
+
         return jsonify({
             "company": company,
             "role": role,
             "h1b_probability": f"{prediction}%",
+            "status": "success"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/ip_info', methods=['GET'])
+def ip_info():
+    """Get current outbound IP and network information."""
+    try:
+        import requests as ip_requests
+        
+        # Get current outbound IP
+        try:
+            ip_response = ip_requests.get('https://api.ipify.org', timeout=10)
+            current_ip = ip_response.text if ip_response.ok else 'Unable to determine'
+        except:
+            current_ip = 'Unable to determine'
+        
+        # Render's documented static IPs
+        render_static_ips = [
+            "44.226.145.213",
+            "54.187.200.255", 
+            "34.213.214.55",
+            "35.164.95.156",
+            "44.230.95.183",
+            "44.229.200.200"
+        ]
+        
+        return jsonify({
+            "current_outbound_ip": current_ip,
+            "render_static_ips": render_static_ips,
+            "ip_in_static_range": current_ip in render_static_ips,
+            "network_info": {
+                "platform": "Render.com",
+                "region": "US-West",
+                "documentation": "See RENDER_NETWORK_INFO.md"
+            },
             "status": "success"
         })
     except Exception as e:

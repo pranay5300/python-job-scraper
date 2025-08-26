@@ -151,6 +151,7 @@ curl "https://python-job-scraper.onrender.com/test_h1b?company=Google&role=Softw
 3. **CORS Configuration**: Supports both development and production
 4. **Error Handling**: Graceful fallbacks and detailed logging
 5. **Root Route**: Prevents 404 errors on service health checks
+6. **Static IP Documentation**: Network configuration for external integrations
 
 ### Potential Future Improvements
 1. **Redis Caching**: For even faster job searches
@@ -158,6 +159,17 @@ curl "https://python-job-scraper.onrender.com/test_h1b?company=Google&role=Softw
 3. **Database Migration**: PostgreSQL for larger datasets
 4. **Rate Limiting**: API protection for production use
 5. **Authentication**: API keys for enhanced security
+6. **External API Integration**: Real job scraping with IP whitelisting
+
+## 🌐 Network Configuration
+
+### Static Outbound IPs
+Render provides static IP addresses for outbound requests. See `RENDER_NETWORK_INFO.md` for:
+- Complete list of static IPs
+- API whitelisting instructions
+- Database access control examples
+- Security considerations
+- External integration guidelines
 
 ## Troubleshooting
 
