@@ -155,39 +155,36 @@ class FastJobDatabase:
             where_conditions = []
             params = []
             
-            # Company filter (case-insensitive, flexible matching)
+            # Company filter 
             if companies and not (len(companies) == 1 and companies[0].get('company') == 'any'):
                 company_conditions = []
                 for company in companies:
                     if company.get('company') and company['company'] != 'any':
-                        # More flexible matching: case-insensitive, handle spaces/hyphens
-                        company_name = company['company'].lower().replace('-', ' ').replace('_', ' ')
-                        company_conditions.append('LOWER(REPLACE(REPLACE(company_name, "-", " "), "_", " ")) LIKE ?')
-                        params.append(f"%{company_name}%")
+                        # Simple case-insensitive matching
+                        company_conditions.append('LOWER(company_name) LIKE ?')
+                        params.append(f"%{company['company'].lower()}%")
                 if company_conditions:
                     where_conditions.append(f"({' OR '.join(company_conditions)})")
             
-            # Role filter (case-insensitive, flexible matching)
+            # Role filter
             if roles and not (len(roles) == 1 and roles[0].get('role') == 'any'):
                 role_conditions = []
                 for role in roles:
                     if role.get('role') and role['role'] != 'any':
-                        # More flexible matching: case-insensitive, handle spaces/hyphens
-                        role_name = role['role'].lower().replace('-', ' ').replace('_', ' ')
-                        role_conditions.append('LOWER(REPLACE(REPLACE(job_title, "-", " "), "_", " ")) LIKE ?')
-                        params.append(f"%{role_name}%")
+                        # Simple case-insensitive matching
+                        role_conditions.append('LOWER(job_title) LIKE ?')
+                        params.append(f"%{role['role'].lower()}%")
                 if role_conditions:
                     where_conditions.append(f"({' OR '.join(role_conditions)})")
             
-            # Location filter (case-insensitive, flexible matching)
+            # Location filter
             if locations and not (len(locations) == 1 and locations[0].get('location') == 'any'):
                 location_conditions = []
                 for location in locations:
                     if location.get('location') and location['location'] != 'any':
-                        # More flexible matching: case-insensitive, handle spaces/hyphens
-                        location_name = location['location'].lower().replace('-', ' ').replace('_', ' ')
-                        location_conditions.append('LOWER(REPLACE(REPLACE(location, "-", " "), "_", " ")) LIKE ?')
-                        params.append(f"%{location_name}%")
+                        # Simple case-insensitive matching
+                        location_conditions.append('LOWER(location) LIKE ?')
+                        params.append(f"%{location['location'].lower()}%")
                 if location_conditions:
                     where_conditions.append(f"({' OR '.join(location_conditions)})")
             
@@ -541,36 +538,49 @@ def ip_info():
 def debug_companies():
     """Debug endpoint to see available companies in database."""
     try:
+        # Simple check first
+        if not hasattr(job_db, 'db_path') or not job_db.db_path:
+            return jsonify({"error": "Database not initialized", "status": "error"}), 500
+            
         conn = sqlite3.connect(job_db.db_path)
         cursor = conn.cursor()
         
-        # Get unique companies
-        cursor.execute('SELECT DISTINCT company_name FROM jobs ORDER BY company_name LIMIT 50')
-        companies = [row[0] for row in cursor.fetchall()]
-        
-        # Get total count
+        # Get total count first (simplest query)
         cursor.execute('SELECT COUNT(*) FROM jobs')
         total_jobs = cursor.fetchone()[0]
         
+        if total_jobs == 0:
+            conn.close()
+            return jsonify({
+                "total_jobs": 0,
+                "message": "Database is empty - no jobs found",
+                "status": "warning"
+            })
+        
+        # Get unique companies (limit to prevent memory issues)
+        cursor.execute('SELECT DISTINCT company_name FROM jobs ORDER BY company_name LIMIT 20')
+        companies = [row[0] for row in cursor.fetchall()]
+        
         # Get sample job titles
-        cursor.execute('SELECT DISTINCT job_title FROM jobs ORDER BY job_title LIMIT 20')
+        cursor.execute('SELECT DISTINCT job_title FROM jobs ORDER BY job_title LIMIT 10')
         job_titles = [row[0] for row in cursor.fetchall()]
         
         # Get sample locations
-        cursor.execute('SELECT DISTINCT location FROM jobs ORDER BY location LIMIT 20')
+        cursor.execute('SELECT DISTINCT location FROM jobs ORDER BY location LIMIT 10')
         locations = [row[0] for row in cursor.fetchall()]
         
         conn.close()
         
         return jsonify({
             "total_jobs": total_jobs,
-            "sample_companies": companies,
-            "sample_job_titles": job_titles,
-            "sample_locations": locations,
+            "sample_companies": companies[:10],  # Limit response size
+            "sample_job_titles": job_titles[:5],
+            "sample_locations": locations[:5],
             "status": "success"
         })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Debug companies error: {e}")
+        return jsonify({"error": f"Database error: {str(e)}"}, "status": "error"), 500
 
 # Initialize on startup
 def initialize_app():
