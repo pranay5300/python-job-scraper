@@ -117,11 +117,6 @@ class FastJobDatabase:
         ]
         
         work_types = ['Full-time', 'Part-time', 'Contract', 'Remote', 'Hybrid', 'Internship']
-        salaries = [
-            '$60,000 - $80,000', '$80,000 - $120,000', '$120,000 - $160,000', 
-            '$160,000 - $200,000', '$200,000 - $250,000', '$250,000+',
-            'Competitive', 'N/A'
-        ]
         sources = ['LinkedIn', 'Indeed', 'Glassdoor', 'Company Website']
         
         jobs_data = []
@@ -130,9 +125,11 @@ class FastJobDatabase:
             title = random.choice(job_titles)
             location = random.choice(locations)
             work_type = random.choice(work_types)
-            salary = random.choice(salaries)
-            source = random.choice(sources)
             
+            # Generate realistic salary for this specific job
+            salary = job_scraper._generate_realistic_salary(title, company, location)
+            
+            source = random.choice(sources)
             job_link = f'https://{source.lower()}.com/jobs/{company.lower().replace(" ", "-")}-{title.lower().replace(" ", "-")}-{i}'
             
             jobs_data.append((title, company, location, job_link, work_type, salary, source))
@@ -539,8 +536,8 @@ class JobScraper:
             work_types = [job_type] if job_type and job_type.lower() != 'any' else ['Full-time', 'Remote', 'Hybrid']
             work_type = random.choice(work_types)
             
-            salaries = ['$80,000 - $120,000', '$120,000 - $160,000', '$160,000 - $200,000', '$200,000+', 'Competitive']
-            salary = random.choice(salaries)
+            # Generate realistic salary based on role and company
+            salary = self._generate_realistic_salary(final_role, company, location)
             
             sources = ['LinkedIn', 'Indeed', 'Glassdoor', 'Company Website']
             source = random.choice(sources)
@@ -568,6 +565,147 @@ class JobScraper:
             jobs.append(job)
         
         return jobs
+    
+    def _generate_realistic_salary(self, role, company, location):
+        """Generate realistic salary based on role, company, and location."""
+        
+        # Define salary ranges by role level and type
+        salary_ranges = {
+            # Tech roles
+            'software engineer': {'min': 80000, 'max': 180000, 'senior_min': 120000, 'senior_max': 250000},
+            'data scientist': {'min': 90000, 'max': 160000, 'senior_min': 130000, 'senior_max': 220000},
+            'machine learning engineer': {'min': 100000, 'max': 180000, 'senior_min': 140000, 'senior_max': 250000},
+            'product manager': {'min': 100000, 'max': 180000, 'senior_min': 140000, 'senior_max': 250000},
+            'devops engineer': {'min': 90000, 'max': 160000, 'senior_min': 130000, 'senior_max': 220000},
+            'cloud engineer': {'min': 85000, 'max': 150000, 'senior_min': 120000, 'senior_max': 200000},
+            'security engineer': {'min': 90000, 'max': 160000, 'senior_min': 130000, 'senior_max': 220000},
+            'frontend engineer': {'min': 75000, 'max': 140000, 'senior_min': 110000, 'senior_max': 180000},
+            'backend engineer': {'min': 80000, 'max': 150000, 'senior_min': 120000, 'senior_max': 200000},
+            'full stack engineer': {'min': 80000, 'max': 150000, 'senior_min': 120000, 'senior_max': 200000},
+            'mobile engineer': {'min': 80000, 'max': 150000, 'senior_min': 120000, 'senior_max': 200000},
+            'qa engineer': {'min': 65000, 'max': 120000, 'senior_min': 95000, 'senior_max': 160000},
+            'solutions architect': {'min': 120000, 'max': 200000, 'senior_min': 160000, 'senior_max': 280000},
+            
+            # Business roles
+            'operations manager': {'min': 70000, 'max': 130000, 'senior_min': 100000, 'senior_max': 180000},
+            'supply chain analyst': {'min': 60000, 'max': 100000, 'senior_min': 85000, 'senior_max': 130000},
+            'supply chain manager': {'min': 80000, 'max': 140000, 'senior_min': 110000, 'senior_max': 180000},
+            'business analyst': {'min': 65000, 'max': 110000, 'senior_min': 90000, 'senior_max': 140000},
+            'project manager': {'min': 70000, 'max': 130000, 'senior_min': 100000, 'senior_max': 170000},
+            'marketing manager': {'min': 70000, 'max': 130000, 'senior_min': 100000, 'senior_max': 170000},
+            'sales manager': {'min': 80000, 'max': 150000, 'senior_min': 120000, 'senior_max': 200000},
+            'finance manager': {'min': 80000, 'max': 140000, 'senior_min': 110000, 'senior_max': 180000},
+            'hr manager': {'min': 70000, 'max': 120000, 'senior_min': 95000, 'senior_max': 150000},
+            'operations analyst': {'min': 60000, 'max': 100000, 'senior_min': 85000, 'senior_max': 130000},
+            'business development manager': {'min': 80000, 'max': 150000, 'senior_min': 120000, 'senior_max': 200000},
+            'strategy manager': {'min': 90000, 'max': 160000, 'senior_min': 130000, 'senior_max': 220000},
+            'product marketing manager': {'min': 80000, 'max': 140000, 'senior_min': 110000, 'senior_max': 180000},
+            'customer success manager': {'min': 70000, 'max': 130000, 'senior_min': 100000, 'senior_max': 170000},
+            
+            # Finance roles
+            'financial analyst': {'min': 65000, 'max': 110000, 'senior_min': 90000, 'senior_max': 140000},
+            'investment analyst': {'min': 80000, 'max': 140000, 'senior_min': 110000, 'senior_max': 180000},
+            'risk analyst': {'min': 70000, 'max': 120000, 'senior_min': 95000, 'senior_max': 150000},
+            'credit analyst': {'min': 60000, 'max': 100000, 'senior_min': 80000, 'senior_max': 130000},
+            'treasury analyst': {'min': 65000, 'max': 110000, 'senior_min': 90000, 'senior_max': 140000},
+            'corporate finance manager': {'min': 90000, 'max': 160000, 'senior_min': 130000, 'senior_max': 220000},
+            'investment banking analyst': {'min': 100000, 'max': 180000, 'senior_min': 140000, 'senior_max': 250000},
+            
+            # Consulting roles
+            'management consultant': {'min': 80000, 'max': 150000, 'senior_min': 120000, 'senior_max': 200000},
+            'strategy consultant': {'min': 90000, 'max': 160000, 'senior_min': 130000, 'senior_max': 220000},
+            'technology consultant': {'min': 80000, 'max': 140000, 'senior_min': 110000, 'senior_max': 180000},
+            'operations consultant': {'min': 80000, 'max': 140000, 'senior_min': 110000, 'senior_max': 180000},
+            'financial consultant': {'min': 70000, 'max': 130000, 'senior_min': 100000, 'senior_max': 170000},
+            
+            # Other roles
+            'data analyst': {'min': 60000, 'max': 100000, 'senior_min': 85000, 'senior_max': 130000},
+            'marketing analyst': {'min': 55000, 'max': 95000, 'senior_min': 80000, 'senior_max': 120000},
+            'sales representative': {'min': 50000, 'max': 100000, 'senior_min': 75000, 'senior_max': 130000},
+            'account manager': {'min': 60000, 'max': 120000, 'senior_min': 90000, 'senior_max': 150000},
+            'customer service representative': {'min': 35000, 'max': 60000, 'senior_min': 50000, 'senior_max': 80000},
+            'administrative assistant': {'min': 35000, 'max': 60000, 'senior_min': 50000, 'senior_max': 80000},
+            'executive assistant': {'min': 50000, 'max': 90000, 'senior_min': 70000, 'senior_max': 110000}
+        }
+        
+        # Company multipliers (premium companies pay more)
+        company_multipliers = {
+            'google': 1.3, 'microsoft': 1.25, 'amazon': 1.2, 'apple': 1.3, 'meta': 1.25,
+            'netflix': 1.4, 'tesla': 1.2, 'nvidia': 1.3, 'intel': 1.15, 'cisco': 1.1,
+            'oracle': 1.1, 'ibm': 1.05, 'salesforce': 1.2, 'adobe': 1.15,
+            'uber': 1.15, 'airbnb': 1.2, 'spotify': 1.15, 'linkedin': 1.2,
+            'goldman sachs': 1.3, 'jpmorgan chase': 1.25, 'bank of america': 1.15,
+            'wells fargo': 1.1, 'accenture': 1.1, 'deloitte': 1.15, 'mckinsey': 1.4,
+            'bcg': 1.35, 'bain': 1.35, 'pwc': 1.1, 'ey': 1.1, 'kpmg': 1.1
+        }
+        
+        # Location multipliers (high cost of living areas pay more)
+        location_multipliers = {
+            'san francisco': 1.4, 'new york': 1.3, 'seattle': 1.2, 'boston': 1.2,
+            'los angeles': 1.15, 'chicago': 1.1, 'denver': 1.05, 'austin': 1.0,
+            'atlanta': 0.95, 'raleigh': 0.9, 'dallas': 0.95, 'houston': 0.9,
+            'phoenix': 0.9, 'philadelphia': 1.0, 'san diego': 1.1, 'miami': 1.0,
+            'portland': 1.05, 'nashville': 0.9, 'remote': 1.0, 'hybrid': 1.0
+        }
+        
+        # Get base salary range for role
+        role_lower = role.lower()
+        base_range = None
+        
+        # Find matching role (exact or partial match)
+        for role_key, range_data in salary_ranges.items():
+            if role_key in role_lower or role_lower in role_key:
+                base_range = range_data
+                break
+        
+        # Default range if no match found
+        if not base_range:
+            base_range = {'min': 60000, 'max': 120000, 'senior_min': 90000, 'senior_max': 160000}
+        
+        # Determine if it's a senior role
+        is_senior = any(word in role_lower for word in ['senior', 'lead', 'principal', 'staff', 'director'])
+        
+        if is_senior:
+            min_salary = base_range['senior_min']
+            max_salary = base_range['senior_max']
+        else:
+            min_salary = base_range['min']
+            max_salary = base_range['max']
+        
+        # Apply company multiplier
+        company_lower = company.lower()
+        company_mult = 1.0
+        for comp_key, mult in company_multipliers.items():
+            if comp_key in company_lower:
+                company_mult = mult
+                break
+        
+        min_salary = int(min_salary * company_mult)
+        max_salary = int(max_salary * company_mult)
+        
+        # Apply location multiplier
+        location_lower = location.lower()
+        location_mult = 1.0
+        for loc_key, mult in location_multipliers.items():
+            if loc_key in location_lower:
+                location_mult = mult
+                break
+        
+        min_salary = int(min_salary * location_mult)
+        max_salary = int(max_salary * location_mult)
+        
+        # Generate random salary within range
+        salary = random.randint(min_salary, max_salary)
+        
+        # Format salary range
+        if max_salary - min_salary > 50000:
+            # Large range - show range
+            return f"${min_salary:,} - ${max_salary:,}"
+        else:
+            # Small range - show specific salary with some variance
+            variance = random.randint(-10000, 10000)
+            final_salary = max(min_salary, salary + variance)
+            return f"${final_salary:,}"
     
     def validate_job_links(self, jobs):
         """Validate and improve job links to ensure they're clickable."""
