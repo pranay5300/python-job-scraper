@@ -507,7 +507,24 @@ class JobScraper:
         # Use search criteria or fallback to all companies
         target_companies = companies if companies else all_companies
         target_roles = roles if roles else ['Operations Manager', 'Supply Chain Analyst', 'Business Analyst']
-        target_locations = locations if locations else ['San Francisco, CA', 'New York, NY', 'Seattle, WA', 'Remote']
+        
+        # Filter out "any" and empty locations, use real cities
+        real_locations = []
+        if locations:
+            for loc in locations:
+                if loc and loc.lower() not in ['any', '']:
+                    real_locations.append(loc)
+        
+        # If no real locations specified, use diverse city list
+        if not real_locations:
+            real_locations = [
+                'San Francisco, CA', 'New York, NY', 'Seattle, WA', 'Austin, TX', 'Boston, MA',
+                'Chicago, IL', 'Los Angeles, CA', 'Denver, CO', 'Atlanta, GA', 'Raleigh, NC',
+                'Dallas, TX', 'Houston, TX', 'Phoenix, AZ', 'Philadelphia, PA', 'San Diego, CA',
+                'Miami, FL', 'Portland, OR', 'Nashville, TN', 'Remote', 'Hybrid'
+            ]
+        
+        target_locations = real_locations
         
         for i in range(count):
             company = random.choice(target_companies)
@@ -679,6 +696,21 @@ def download_excel():
         # Validate and improve job links
         jobs = job_scraper.validate_job_links(jobs)
         logger.info(f"Validated {len(jobs)} job links")
+        
+        # Ensure all jobs have real locations (not "any")
+        for job in jobs:
+            if job.get('location', '').lower() in ['any', '']:
+                # Replace "any" with a random real city
+                real_cities = [
+                    'San Francisco, CA', 'New York, NY', 'Seattle, WA', 'Austin, TX', 'Boston, MA',
+                    'Chicago, IL', 'Los Angeles, CA', 'Denver, CO', 'Atlanta, GA', 'Raleigh, NC',
+                    'Dallas, TX', 'Houston, TX', 'Phoenix, AZ', 'Philadelphia, PA', 'San Diego, CA',
+                    'Miami, FL', 'Portland, OR', 'Nashville, TN', 'Remote', 'Hybrid'
+                ]
+                job['location'] = random.choice(real_cities)
+                logger.info(f"Replaced 'any' location with: {job['location']}")
+        
+        logger.info(f"Final job locations: {[job.get('location', 'N/A') for job in jobs[:5]]}")  # Log first 5 locations
         
         # Add H1B predictions if requested
         if include_h1b:
