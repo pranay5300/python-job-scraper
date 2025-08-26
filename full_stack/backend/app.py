@@ -30,8 +30,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Configure CORS for development and production
 CORS(app, resources={
-    r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000", "https://jobdatacamp-frontend.onrender.com"]},
-    r"/download_excel": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000", "https://jobdatacamp-frontend.onrender.com"]},
+    r"/api/*": {"origins": "*"},
+    r"/download_excel": {"origins": "*"},
     r"/": {"origins": "*"},
     r"/health": {"origins": "*"},
     r"/stats": {"origins": "*"},

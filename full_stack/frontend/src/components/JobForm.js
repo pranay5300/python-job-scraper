@@ -139,12 +139,24 @@ const JobForm = () => {
       let errorMessage = 'An error occurred while generating your job search results.';
       
       if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
-        errorMessage = '🔧 Backend server is not running. Please start the backend server:\n\n' +
-                     '1. Open terminal\n' +
-                     '2. Run: cd /workspace && ./start_servers.sh\n' +
-                     '3. Wait for servers to start\n' +
-                     '4. Try your search again\n\n' +
-                     'Backend should be available at: http://localhost:5000';
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+        
+        if (backendUrl.includes('localhost')) {
+          errorMessage = '🔧 Local backend server is not running. Please start the backend server:\n\n' +
+                       '1. Open terminal\n' +
+                       '2. Run: cd /workspace && ./start_servers.sh\n' +
+                       '3. Wait for servers to start\n' +
+                       '4. Try your search again\n\n' +
+                       'Backend should be available at: http://localhost:5000';
+        } else {
+          errorMessage = '🌐 Cannot connect to production backend server.\n\n' +
+                       `Backend URL: ${backendUrl}\n\n` +
+                       'Possible issues:\n' +
+                       '• Production server may be experiencing downtime\n' +
+                       '• Network connectivity issues\n' +
+                       '• CORS configuration problems\n\n' +
+                       'Please try again in a few moments or contact support.';
+        }
       } else if (error.message.includes('NetworkError')) {
         errorMessage = '🌐 Network connection issue. Please check your internet connection and try again.';
       } else {

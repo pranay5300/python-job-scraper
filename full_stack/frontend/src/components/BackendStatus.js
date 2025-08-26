@@ -47,7 +47,10 @@ const BackendStatus = () => {
   };
 
   const handleStartServers = () => {
-    const instructions = `To start the backend server:
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    
+    if (backendUrl.includes('localhost')) {
+      const instructions = `To start the LOCAL backend server:
 
 1. Open a terminal
 2. Run: cd /workspace && ./start_servers.sh
@@ -59,8 +62,25 @@ Or manually:
 2. python3 app.py
 
 The backend should then be available at http://localhost:5000`;
+      
+      alert(instructions);
+    } else {
+      const instructions = `PRODUCTION BACKEND STATUS:
 
-    alert(instructions);
+Backend URL: ${backendUrl}
+
+If you're seeing connection issues:
+1. Check if the production backend is online
+2. Verify CORS settings allow your domain
+3. Check browser console for detailed errors
+4. Try refreshing the page
+
+For local development:
+1. Update .env file to use: REACT_APP_BACKEND_URL=http://localhost:5000
+2. Start local backend with: ./start_servers.sh`;
+      
+      alert(instructions);
+    }
   };
 
   return (
