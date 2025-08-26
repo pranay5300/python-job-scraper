@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from './components/Header';
 import JobForm from './components/JobForm';
 import Auth from './components/Auth';
+import BackendStatus from './components/BackendStatus';
 import './App.css';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
       <main className="main-content">
         <JobForm user={user} />
       </main>
+      <BackendStatus />
     </div>
   );
 }

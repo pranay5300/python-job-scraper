@@ -13,44 +13,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Use %PUBLIC_URL% for correct file references -->
-  <link rel="stylesheet" href="%PUBLIC_URL%/index.css">
-
-  <!-- Optional: Add a favicon -->
-  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" type="image/x-icon">
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>" type="image/svg+xml">
 </head>
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>
   
   <!-- React renders the app here -->
   <div id="root"></div>
-<!-- Embed AI Agent -->
-  <script src="https://cdn.jotfor.ms/s/umd/latest/for-embedded-agent.js"></script>
-  <script>
-    window.addEventListener("DOMContentLoaded", function () {
-      window.AgentInitializer.init({
-        agentRenderURL: "https://agent.jotform.com/0195e80f3dd37353b5bec7115a66cf8759d1",
-        rootId: "JotformAgent-0195e80f3dd37353b5bec7115a66cf8759d1",
-        formID: "0195e80f3dd37353b5bec7115a66cf8759d1",
-        queryParams: ["skipWelcome=1", "maximizable=1"],
-        domain: "https://www.jotform.com",
-        isDraggable: false,
-        background: "linear-gradient(180deg, #FF8DB9 0%, #FF8DB9 100%)",
-        buttonBackgroundColor: "#2AE283",
-        buttonIconColor: "#150D0E",
-        variant: false,
-        customizations: {
-          greeting: "Yes",
-          greetingMessage: "Hi! How can I assist you?",
-          openByDefault: "No",
-          pulse: "Yes",
-          position: "right",
-          autoOpenChatIn: "0"
-        },
-        isVoice: undefined
-      });
-    });
-  </script>
+<!-- Clean HTML without external dependencies -->
   <!-- Scripts will be auto-injected by React -->
 </body>
 </html>

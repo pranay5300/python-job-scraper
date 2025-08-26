@@ -132,10 +132,26 @@ const JobForm = () => {
         setLoading(false);
         setCompleted(true);
       } else {
-        throw new Error('Failed to generate the Excel file.');
+        const errorData = await response.text();
+        throw new Error(`Server error: ${response.status}. ${errorData}`);
       }
     } catch (error) {
-      alert('An error occurred: ' + error.message);
+      let errorMessage = 'An error occurred while generating your job search results.';
+      
+      if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
+        errorMessage = '🔧 Backend server is not running. Please start the backend server:\n\n' +
+                     '1. Open terminal\n' +
+                     '2. Run: cd /workspace && ./start_servers.sh\n' +
+                     '3. Wait for servers to start\n' +
+                     '4. Try your search again\n\n' +
+                     'Backend should be available at: http://localhost:5000';
+      } else if (error.message.includes('NetworkError')) {
+        errorMessage = '🌐 Network connection issue. Please check your internet connection and try again.';
+      } else {
+        errorMessage = `❌ ${error.message}`;
+      }
+      
+      alert(errorMessage);
     } finally {
       clearInterval(triviaInterval);
       setLoading(false);
