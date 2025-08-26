@@ -13,6 +13,7 @@ const JobForm = () => {
     role: false,
     location: false,
   });
+  const [includeH1B, setIncludeH1B] = useState(false);
 
   const triviaFacts = [
     "LinkedIn has over 900 million users worldwide.",
@@ -104,6 +105,8 @@ const JobForm = () => {
       overall_company_weight: 33,
       overall_role_weight: 33,
       overall_location_weight: 34,
+      include_h1b: includeH1B.toString(),
+      job_type: event.target.jobType.value,
     });
 
     const backendUrl = 'https://python-job-scraper.onrender.com';
@@ -374,6 +377,30 @@ const JobForm = () => {
                       <option value="Contract">Contract</option>
                       <option value="Remote">Remote</option>
                     </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* H1B Visa Sponsorship */}
+              <div className="form-card">
+                <div className="card-header">
+                  <span className="card-icon">🛂</span>
+                  <h3>Visa Sponsorship</h3>
+                </div>
+                <div className="card-content">
+                  <div className="checkbox-group">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={includeH1B}
+                        onChange={(e) => setIncludeH1B(e.target.checked)}
+                      />
+                      <span className="checkmark"></span>
+                      Include H1B sponsorship prediction
+                    </label>
+                    <p className="checkbox-description">
+                      When enabled, an additional column will show the probability (%) that each company sponsors H1B visas for the specific role.
+                    </p>
                   </div>
                 </div>
               </div>

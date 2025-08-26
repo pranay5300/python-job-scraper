@@ -348,6 +348,14 @@ body {
   accent-color: #667eea;
 }
 
+.checkbox-description {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #718096;
+  line-height: 1.4;
+  font-style: italic;
+}
+
 /* Submit Section */
 .submit-section {
   text-align: center;
