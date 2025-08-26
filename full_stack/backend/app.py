@@ -71,16 +71,56 @@ class FastJobDatabase:
             return False
     
     def _populate_sample_data(self, cursor):
-        """Populate database with sample data."""
-        companies = ['Google', 'Microsoft', 'Amazon', 'Apple', 'Meta']
-        job_titles = ['Software Engineer', 'Data Scientist', 'Product Manager']
-        locations = ['San Francisco, CA', 'New York, NY', 'Seattle, WA', 'Remote']
-        work_types = ['Full-time', 'Remote']
-        salaries = ['$120,000 - $160,000', '$160,000 - $200,000']
-        sources = ['LinkedIn', 'Indeed']
+        """Populate database with diverse sample data."""
+        companies = [
+            'Google', 'Microsoft', 'Amazon', 'Apple', 'Meta', 'Netflix', 'Tesla',
+            'NVIDIA', 'Intel', 'Cisco', 'Oracle', 'IBM', 'Salesforce', 'Adobe',
+            'Uber', 'Airbnb', 'Spotify', 'LinkedIn', 'Twitter', 'Snap',
+            'Goldman Sachs', 'JPMorgan Chase', 'Bank of America', 'Wells Fargo',
+            'Accenture', 'Deloitte', 'McKinsey & Company', 'BCG', 'Bain & Company',
+            'Walmart', 'Target', 'Costco', 'Home Depot', 'Lowe\'s', 'FedEx', 'UPS'
+        ]
+        
+        job_titles = [
+            # Tech roles
+            'Software Engineer', 'Senior Software Engineer', 'Data Scientist', 'Machine Learning Engineer',
+            'Product Manager', 'Technical Program Manager', 'Engineering Manager', 'DevOps Engineer',
+            'Cloud Engineer', 'Security Engineer', 'Frontend Engineer', 'Backend Engineer',
+            'Full Stack Engineer', 'Mobile Engineer', 'QA Engineer', 'Solutions Architect',
+            # Business roles
+            'Operations Manager', 'Supply Chain Analyst', 'Business Analyst', 'Project Manager',
+            'Marketing Manager', 'Sales Manager', 'Finance Manager', 'HR Manager',
+            'Operations Analyst', 'Supply Chain Manager', 'Business Development Manager',
+            'Strategy Manager', 'Product Marketing Manager', 'Customer Success Manager',
+            # Finance roles
+            'Financial Analyst', 'Investment Analyst', 'Risk Analyst', 'Credit Analyst',
+            'Treasury Analyst', 'Corporate Finance Manager', 'Investment Banking Analyst',
+            # Consulting roles
+            'Management Consultant', 'Strategy Consultant', 'Technology Consultant',
+            'Operations Consultant', 'Financial Consultant',
+            # Other roles
+            'Data Analyst', 'Marketing Analyst', 'Sales Representative', 'Account Manager',
+            'Customer Service Representative', 'Administrative Assistant', 'Executive Assistant'
+        ]
+        
+        locations = [
+            'San Francisco, CA', 'New York, NY', 'Seattle, WA', 'Austin, TX',
+            'Boston, MA', 'Chicago, IL', 'Los Angeles, CA', 'Denver, CO',
+            'Atlanta, GA', 'Raleigh, NC', 'Remote', 'Mountain View, CA',
+            'Palo Alto, CA', 'Redmond, WA', 'Cambridge, MA', 'Dallas, TX',
+            'Houston, TX', 'Phoenix, AZ', 'Philadelphia, PA', 'San Diego, CA'
+        ]
+        
+        work_types = ['Full-time', 'Part-time', 'Contract', 'Remote', 'Hybrid', 'Internship']
+        salaries = [
+            '$60,000 - $80,000', '$80,000 - $120,000', '$120,000 - $160,000', 
+            '$160,000 - $200,000', '$200,000 - $250,000', '$250,000+',
+            'Competitive', 'N/A'
+        ]
+        sources = ['LinkedIn', 'Indeed', 'Glassdoor', 'Company Website']
         
         jobs_data = []
-        for i in range(100):  # Generate 100 sample jobs for faster initialization
+        for i in range(200):  # Generate 200 diverse sample jobs
             company = random.choice(companies)
             title = random.choice(job_titles)
             location = random.choice(locations)
@@ -88,7 +128,7 @@ class FastJobDatabase:
             salary = random.choice(salaries)
             source = random.choice(sources)
             
-            job_link = f'https://{source.lower()}.com/jobs/{company.lower()}-{title.lower().replace(" ", "-")}-{i}'
+            job_link = f'https://{source.lower()}.com/jobs/{company.lower().replace(" ", "-")}-{title.lower().replace(" ", "-")}-{i}'
             
             jobs_data.append((title, company, location, job_link, work_type, salary, source))
         
@@ -97,23 +137,75 @@ class FastJobDatabase:
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', jobs_data)
         
-        logger.info(f"Populated database with {len(jobs_data)} sample jobs")
+        logger.info(f"Populated database with {len(jobs_data)} diverse sample jobs")
     
     def search_jobs(self, companies=None, roles=None, locations=None, job_type='Full-time', limit=50):
-        """Simple job search."""
+        """Accurate job search with proper filtering."""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            # Simple query for testing
+            # Build WHERE conditions
+            where_conditions = []
+            params = []
+            
+            # Company filter - exact match or partial match
+            if companies and len(companies) > 0:
+                company_conditions = []
+                for company in companies:
+                    if company.get('company') and company['company'].lower() not in ['any', '']:
+                        company_name = company['company'].strip()
+                        # Try exact match first, then partial match
+                        company_conditions.append('(LOWER(company_name) = ? OR LOWER(company_name) LIKE ?)')
+                        params.extend([company_name.lower(), f'%{company_name.lower()}%'])
+                
+                if company_conditions:
+                    where_conditions.append(f"({' OR '.join(company_conditions)})")
+            
+            # Role filter - exact match or keyword match
+            if roles and len(roles) > 0:
+                role_conditions = []
+                for role in roles:
+                    if role.get('role') and role['role'].lower() not in ['any', '']:
+                        role_name = role['role'].strip()
+                        # Try exact match first, then keyword match
+                        role_conditions.append('(LOWER(job_title) = ? OR LOWER(job_title) LIKE ?)')
+                        params.extend([role_name.lower(), f'%{role_name.lower()}%'])
+                
+                if role_conditions:
+                    where_conditions.append(f"({' OR '.join(role_conditions)})")
+            
+            # Location filter - exact match or partial match
+            if locations and len(locations) > 0:
+                location_conditions = []
+                for location in locations:
+                    if location.get('location') and location['location'].lower() not in ['any', '']:
+                        location_name = location['location'].strip()
+                        # Try exact match first, then partial match
+                        location_conditions.append('(LOWER(location) = ? OR LOWER(location) LIKE ?)')
+                        params.extend([location_name.lower(), f'%{location_name.lower()}%'])
+                
+                if location_conditions:
+                    where_conditions.append(f"({' OR '.join(location_conditions)})")
+            
+            # Job type filter - exact match
+            if job_type and job_type.lower() not in ['any', '']:
+                where_conditions.append('LOWER(work_type) = ?')
+                params.append(job_type.lower())
+            
+            # Build final query
             query = '''
                 SELECT job_title, company_name, location, job_link, work_type, salary, source
                 FROM jobs
-                ORDER BY created_at DESC
-                LIMIT ?
             '''
             
-            cursor.execute(query, (limit,))
+            if where_conditions:
+                query += ' WHERE ' + ' AND '.join(where_conditions)
+            
+            query += ' ORDER BY created_at DESC LIMIT ?'
+            params.append(limit)
+            
+            cursor.execute(query, params)
             results = cursor.fetchall()
             conn.close()
             
@@ -129,6 +221,7 @@ class FastJobDatabase:
                     'source': row[6]
                 })
             
+            logger.info(f"Search found {len(jobs)} jobs with filters: companies={companies}, roles={roles}, locations={locations}, job_type={job_type}")
             return jobs
             
         except Exception as e:
