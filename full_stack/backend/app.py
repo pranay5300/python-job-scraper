@@ -13,6 +13,8 @@ from bs4 import BeautifulSoup
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Alignment
+from openpyxl.utils import get_column_letter
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -693,30 +695,83 @@ def download_excel():
             logger.info(f"Processing time: {elapsed_time:.2f}s, waiting {remaining_time:.2f}s for quality assurance...")
             time.sleep(remaining_time)
         
-        # Create Excel file
+        # Create Excel file with enhanced formatting
         wb = Workbook()
         ws = wb.active
         ws.title = "Job Matches"
         
-        # Add headers
+        # Define headers
         headers = ['Job Title', 'Company Name', 'Location', 'Job Link', 'Work Type', 'Salary', 'Source']
         if include_h1b:
             headers.append('H1B Probability')
         
-        for col, header in enumerate(headers, 1):
-            ws.cell(row=1, column=col, value=header)
+        # Style definitions
+        header_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")  # Yellow background
+        header_font = Font(color="000000", bold=True)  # Black text, bold
+        header_alignment = Alignment(horizontal="center", vertical="center")
         
-        # Add job data
+        # Add headers with styling
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+        
+        # Add job data with clickable links
         for row, job in enumerate(jobs, 2):
+            # Job Title
             ws.cell(row=row, column=1, value=job['job_title'])
+            
+            # Company Name
             ws.cell(row=row, column=2, value=job['company_name'])
+            
+            # Location
             ws.cell(row=row, column=3, value=job['location'])
-            ws.cell(row=row, column=4, value=job['job_link'])
+            
+            # Job Link (clickable)
+            job_link_cell = ws.cell(row=row, column=4, value=job['job_link'])
+            job_link_cell.hyperlink = job['job_link']
+            job_link_cell.font = Font(color="0000FF", underline="single")  # Blue, underlined
+            
+            # Work Type
             ws.cell(row=row, column=5, value=job['work_type'])
+            
+            # Salary
             ws.cell(row=row, column=6, value=job['salary'])
+            
+            # Source
             ws.cell(row=row, column=7, value=job['source'])
+            
+            # H1B Probability (if requested)
             if include_h1b:
-                ws.cell(row=row, column=8, value=f"{job.get('h1b_probability', 'N/A')}%")
+                h1b_value = f"{job.get('h1b_probability', 'N/A')}%"
+                ws.cell(row=row, column=8, value=h1b_value)
+        
+        # Auto-adjust column widths
+        for col in range(1, len(headers) + 1):
+            column_letter = get_column_letter(col)
+            max_length = 0
+            
+            # Check header length
+            header_length = len(str(headers[col-1]))
+            max_length = max(max_length, header_length)
+            
+            # Check data length in first 20 rows
+            for row in range(2, min(len(jobs) + 2, 22)):
+                cell_value = ws.cell(row=row, column=col).value
+                if cell_value:
+                    cell_length = len(str(cell_value))
+                    max_length = max(max_length, cell_length)
+            
+            # Set column width (with some padding)
+            adjusted_width = min(max_length + 2, 50)  # Cap at 50 characters
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Enable sorting and filtering on the header row
+        ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{len(jobs) + 1}"
+        
+        # Freeze the header row
+        ws.freeze_panes = "A2"
         
         # Save to memory
         excel_buffer = io.BytesIO()
