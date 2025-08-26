@@ -165,12 +165,9 @@ def root():
             "health": "/health",
             "stats": "/stats", 
             "test_h1b": "/test_h1b",
-            "download_excel": "/download_excel",
-            "ip_info": "/ip_info",
-            "debug_companies": "/debug_companies"
+            "download_excel": "/download_excel"
         },
         "production_url": "https://python-job-scraper.onrender.com",
-        "documentation": "See DEBUG_GUIDE.md for complete API usage",
         "frontend_compatible": True,
         "cors_enabled": True
     })
