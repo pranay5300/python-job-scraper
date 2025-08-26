@@ -197,9 +197,10 @@ const JobForm = () => {
                 </div>
                 <div className="card-content">
                   <div className="input-group">
-                    <label className="input-label">Preferred Company</label>
+                    <label htmlFor="company1" className="input-label">Preferred Company</label>
                     <input 
                       type="text" 
+                      id="company1"
                       name="company1" 
                       className="form-input"
                       placeholder="e.g., Google, Microsoft, Apple"
@@ -208,9 +209,10 @@ const JobForm = () => {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Alternative Company</label>
+                    <label htmlFor="company2" className="input-label">Alternative Company</label>
                     <input 
                       type="text" 
+                      id="company2"
                       name="company2" 
                       className="form-input"
                       placeholder="e.g., Amazon, Meta, Netflix"
@@ -219,10 +221,12 @@ const JobForm = () => {
                     />
                   </div>
                   <div className="slider-group">
-                    <label className="input-label">Preference Distribution</label>
+                    <label htmlFor="companyWeight" className="input-label">Preference Distribution</label>
                     <div className="slider-container">
                       <input
                         type="range"
+                        id="companyWeight"
+                        name="companyWeight"
                         min="0"
                         max="100"
                         value={companyWeight}
@@ -237,9 +241,11 @@ const JobForm = () => {
                     </div>
                   </div>
                   <div className="checkbox-group">
-                    <label className="checkbox-label">
+                    <label htmlFor="noPreferenceCompany" className="checkbox-label">
                       <input
                         type="checkbox"
+                        id="noPreferenceCompany"
+                        name="noPreferenceCompany"
                         checked={noPreference.company}
                         onChange={() => handleNoPreferenceChange('company')}
                       />
@@ -258,9 +264,10 @@ const JobForm = () => {
                 </div>
                 <div className="card-content">
                   <div className="input-group">
-                    <label className="input-label">Preferred Role</label>
+                    <label htmlFor="role1" className="input-label">Preferred Role</label>
                     <input 
                       type="text" 
+                      id="role1"
                       name="role1" 
                       className="form-input"
                       placeholder="e.g., Software Engineer, Data Scientist"
@@ -269,9 +276,10 @@ const JobForm = () => {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Alternative Role</label>
+                    <label htmlFor="role2" className="input-label">Alternative Role</label>
                     <input 
                       type="text" 
+                      id="role2"
                       name="role2" 
                       className="form-input"
                       placeholder="e.g., Product Manager, UX Designer"
@@ -282,15 +290,17 @@ const JobForm = () => {
                   <div className="slider-group">
                     <label className="input-label">Preference Distribution</label>
                     <div className="slider-container">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={roleWeight}
-                        className="preference-slider"
-                        onChange={(e) => setRoleWeight(Number(e.target.value))}
-                        disabled={noPreference.role}
-                      />
+                                              <input
+                          type="range"
+                          id="roleWeight"
+                          name="roleWeight"
+                          min="0"
+                          max="100"
+                          value={roleWeight}
+                          className="preference-slider"
+                          onChange={(e) => setRoleWeight(Number(e.target.value))}
+                          disabled={noPreference.role}
+                        />
                       <div className="slider-labels">
                         <span>Primary: {roleWeight}%</span>
                         <span>Alternative: {100 - roleWeight}%</span>
@@ -298,9 +308,11 @@ const JobForm = () => {
                     </div>
                   </div>
                   <div className="checkbox-group">
-                    <label className="checkbox-label">
+                    <label htmlFor="noPreferenceRole" className="checkbox-label">
                       <input
                         type="checkbox"
+                        id="noPreferenceRole"
+                        name="noPreferenceRole"
                         checked={noPreference.role}
                         onChange={() => handleNoPreferenceChange('role')}
                       />
@@ -319,9 +331,10 @@ const JobForm = () => {
                 </div>
                 <div className="card-content">
                   <div className="input-group">
-                    <label className="input-label">Preferred Location</label>
+                    <label htmlFor="location1" className="input-label">Preferred Location</label>
                     <input 
                       type="text" 
+                      id="location1"
                       name="location1" 
                       className="form-input"
                       placeholder="e.g., San Francisco, CA"
@@ -330,9 +343,10 @@ const JobForm = () => {
                     />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">Alternative Location</label>
+                    <label htmlFor="location2" className="input-label">Alternative Location</label>
                     <input 
                       type="text" 
+                      id="location2"
                       name="location2" 
                       className="form-input"
                       placeholder="e.g., New York, NY"
@@ -343,15 +357,17 @@ const JobForm = () => {
                   <div className="slider-group">
                     <label className="input-label">Preference Distribution</label>
                     <div className="slider-container">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={locationWeight}
-                        className="preference-slider"
-                        onChange={(e) => setLocationWeight(Number(e.target.value))}
-                        disabled={noPreference.location}
-                      />
+                                              <input
+                          type="range"
+                          id="locationWeight"
+                          name="locationWeight"
+                          min="0"
+                          max="100"
+                          value={locationWeight}
+                          className="preference-slider"
+                          onChange={(e) => setLocationWeight(Number(e.target.value))}
+                          disabled={noPreference.location}
+                        />
                       <div className="slider-labels">
                         <span>Primary: {locationWeight}%</span>
                         <span>Alternative: {100 - locationWeight}%</span>
@@ -359,9 +375,11 @@ const JobForm = () => {
                     </div>
                   </div>
                   <div className="checkbox-group">
-                    <label className="checkbox-label">
+                    <label htmlFor="noPreferenceLocation" className="checkbox-label">
                       <input
                         type="checkbox"
+                        id="noPreferenceLocation"
+                        name="noPreferenceLocation"
                         checked={noPreference.location}
                         onChange={() => handleNoPreferenceChange('location')}
                       />
@@ -380,8 +398,8 @@ const JobForm = () => {
                 </div>
                 <div className="card-content">
                   <div className="input-group">
-                    <label className="input-label">Employment Type</label>
-                    <select name="jobType" className="form-select" defaultValue="Full-Time">
+                    <label htmlFor="jobType" className="input-label">Employment Type</label>
+                    <select id="jobType" name="jobType" className="form-select" defaultValue="Full-Time">
                       <option value="Full-Time">Full-Time</option>
                       <option value="Part-Time">Part-Time</option>
                       <option value="Internship">Internship</option>
@@ -400,9 +418,11 @@ const JobForm = () => {
                 </div>
                 <div className="card-content">
                   <div className="checkbox-group">
-                    <label className="checkbox-label h1b-checkbox">
+                    <label htmlFor="includeH1B" className="checkbox-label h1b-checkbox">
                       <input
                         type="checkbox"
+                        id="includeH1B"
+                        name="includeH1B"
                         checked={includeH1B}
                         onChange={(e) => setIncludeH1B(e.target.checked)}
                       />
