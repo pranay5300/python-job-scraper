@@ -6,7 +6,11 @@ const BackendStatus = () => {
 
   const checkBackendStatus = useCallback(async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      // Use production backend (Render.com deployment)
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
+      
+      // Log for debugging
+      console.log('BackendStatus: Checking backend at:', backendUrl);
       
       // Create AbortController for timeout
       const controller = new AbortController();
@@ -82,7 +86,7 @@ const BackendStatus = () => {
   };
 
   const handleStartServers = () => {
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
     
     if (backendUrl.includes('localhost')) {
       const instructions = `To start the LOCAL backend server:
@@ -99,16 +103,19 @@ Or manually:
 The backend should then be available at http://localhost:5000`;
       
       alert(instructions);
-    } else {
-      const instructions = `PRODUCTION BACKEND STATUS:
+          } else {
+        const instructions = `PRODUCTION BACKEND STATUS (Render.com):
 
 Backend URL: ${backendUrl}
 
 If you're seeing connection issues:
-1. Check if the production backend is online
-2. Verify CORS settings allow your domain
-3. Check browser console for detailed errors
-4. Try refreshing the page
+1. Render service may be starting up (cold start delay)
+2. Check if the production backend is online
+3. Verify CORS settings allow your domain
+4. Check browser console for detailed errors
+5. Wait 10-15 seconds and try refreshing the page
+
+The backend is deployed on Render.com which may have cold start delays.
 
 For local development:
 1. Update .env file to use: REACT_APP_BACKEND_URL=http://localhost:5000

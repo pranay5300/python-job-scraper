@@ -25,21 +25,33 @@ cd /workspace/full_stack/frontend
 # Verify .env file exists and has correct configuration
 echo -e "\n📁 Checking frontend configuration..."
 if [ ! -f .env ]; then
-    echo "⚠️  .env file missing. Creating..."
+    echo "⚠️  .env file missing. Creating with PRODUCTION configuration..."
     cat > .env << EOF
 # Frontend Configuration for JobDataCamp
-# Production backend URL
+# Production backend URL (Render.com deployment)
 REACT_APP_BACKEND_URL=https://python-job-scraper.onrender.com
 
 # API timeout
 REACT_APP_API_TIMEOUT=120000
 
+# Environment indicator
+REACT_APP_ENVIRONMENT=production
+
 # Development override (uncomment for local development)
 # REACT_APP_BACKEND_URL=http://localhost:5000
+# REACT_APP_ENVIRONMENT=development
 EOF
-    echo "✅ Created .env file with production configuration"
+    echo "✅ Created .env file with PRODUCTION configuration (Render.com backend)"
 else
     echo "✅ .env file exists"
+    # Verify it has the production URL
+    if grep -q "python-job-scraper.onrender.com" .env; then
+        echo "✅ .env configured for PRODUCTION backend (Render.com)"
+    else
+        echo "⚠️  .env may not be configured for production. Updating..."
+        sed -i 's|REACT_APP_BACKEND_URL=.*|REACT_APP_BACKEND_URL=https://python-job-scraper.onrender.com|g' .env
+        echo "✅ Updated .env to use PRODUCTION backend"
+    fi
 fi
 
 # Show current configuration

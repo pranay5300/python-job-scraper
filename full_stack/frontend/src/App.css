@@ -720,6 +720,51 @@ body {
   background: rgba(0, 0, 0, 0.05);
 }
 
+/* Environment Info Component */
+.environment-info {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+}
+
+.env-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.env-badge.production {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+.env-badge.development {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+.backend-url {
+  color: #4a5568;
+  font-weight: 500;
+}
+
 /* Submit Section */
 .submit-section {
   text-align: center;

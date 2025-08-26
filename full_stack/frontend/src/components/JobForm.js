@@ -109,8 +109,12 @@ const JobForm = () => {
       job_type: event.target.jobType.value,
     });
 
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    // Use production backend (Render.com deployment)
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
     const downloadUrl = `${backendUrl}/download_excel?${params}`;
+    
+    // Log for debugging (remove in production)
+    console.log('JobForm: Using backend URL:', backendUrl);
 
     let triviaIndex = 0;
     const triviaInterval = setInterval(() => {
@@ -139,7 +143,7 @@ const JobForm = () => {
       let errorMessage = 'An error occurred while generating your job search results.';
       
       if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
         
         if (backendUrl.includes('localhost')) {
           errorMessage = '🔧 Local backend server is not running. Please start the backend server:\n\n' +
@@ -151,11 +155,12 @@ const JobForm = () => {
         } else {
           errorMessage = '🌐 Cannot connect to production backend server.\n\n' +
                        `Backend URL: ${backendUrl}\n\n` +
-                       'Possible issues:\n' +
-                       '• Production server may be experiencing downtime\n' +
+                       'The backend is deployed on Render.com. Possible issues:\n' +
+                       '• Render server may be experiencing downtime\n' +
                        '• Network connectivity issues\n' +
-                       '• CORS configuration problems\n\n' +
-                       'Please try again in a few moments or contact support.';
+                       '• CORS configuration problems\n' +
+                       '• Cold start delay (Render free tier)\n\n' +
+                       'Please wait a moment and try again. Render services may take 10-15 seconds to start from sleep.';
         }
       } else if (error.message.includes('NetworkError')) {
         errorMessage = '🌐 Network connection issue. Please check your internet connection and try again.';

@@ -3,6 +3,7 @@ import Header from './components/Header';
 import JobForm from './components/JobForm';
 import Auth from './components/Auth';
 import BackendStatus from './components/BackendStatus';
+import EnvironmentInfo from './components/EnvironmentInfo';
 import './App.css';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
   if (!isAuthenticated) {
     return (
       <div className="App">
+        <EnvironmentInfo />
         <Auth onAuthSuccess={handleAuthSuccess} onAuthFailure={handleAuthFailure} />
       </div>
     );
@@ -30,6 +32,7 @@ function App() {
 
   return (
     <div className="App">
+      <EnvironmentInfo />
       <Auth onAuthSuccess={handleAuthSuccess} onAuthFailure={handleAuthFailure} />
       <Header />
       <main className="main-content">
