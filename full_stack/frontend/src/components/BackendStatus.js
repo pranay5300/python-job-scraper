@@ -1,16 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const BackendStatus = () => {
   const [status, setStatus] = useState('checking');
   const [message, setMessage] = useState('Checking backend status...');
 
-  const checkBackendStatus = async () => {
+  const checkBackendStatus = useCallback(async () => {
     try {
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const response = await fetch(`${backendUrl}/health`, {
         method: 'GET',
-        timeout: 5000
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         const data = await response.json();
@@ -22,20 +29,48 @@ const BackendStatus = () => {
       }
     } catch (error) {
       setStatus('offline');
-      if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
+      
+      if (error.name === 'AbortError') {
+        setMessage('⏱️ Backend connection timeout');
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
         setMessage('🔧 Backend server offline');
       } else {
         setMessage(`❌ Connection error: ${error.message}`);
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
-    checkBackendStatus();
+    let isMounted = true;
+    let interval;
+    
+    const safeCheckStatus = async () => {
+      if (isMounted) {
+        try {
+          await checkBackendStatus();
+        } catch (error) {
+          console.warn('Backend status check failed:', error);
+          if (isMounted) {
+            setStatus('offline');
+            setMessage('❌ Connection check failed');
+          }
+        }
+      }
+    };
+
+    // Initial check
+    safeCheckStatus();
+    
     // Check status every 30 seconds
-    const interval = setInterval(checkBackendStatus, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    interval = setInterval(safeCheckStatus, 30000);
+    
+    return () => {
+      isMounted = false;
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [checkBackendStatus]);
 
   const getStatusColor = () => {
     switch (status) {
