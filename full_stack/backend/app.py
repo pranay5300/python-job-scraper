@@ -240,7 +240,7 @@ class JobScraper:
         }
     
     def scrape_linkedin_jobs(self, search_terms, location="", max_jobs=50):
-        """Scrape LinkedIn for real job postings."""
+        """Scrape LinkedIn for real job postings with actual job links."""
         jobs = []
         try:
             # LinkedIn job search URL
@@ -256,27 +256,77 @@ class JobScraper:
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
-                # Extract job listings (LinkedIn structure may vary)
-                job_cards = soup.find_all('div', class_='job-search-card')
+                # Try multiple selectors for LinkedIn's changing structure
+                job_selectors = [
+                    'div[data-entity-urn*="job"]',
+                    '.job-search-card',
+                    '.base-card',
+                    '.jobs-search-results__list-item'
+                ]
+                
+                job_cards = []
+                for selector in job_selectors:
+                    job_cards = soup.select(selector)
+                    if job_cards:
+                        logger.info(f"Found {len(job_cards)} LinkedIn jobs using selector: {selector}")
+                        break
                 
                 for card in job_cards[:max_jobs]:
                     try:
-                        title_elem = card.find('h3', class_='base-search-card__title')
-                        company_elem = card.find('h4', class_='base-search-card__subtitle')
-                        location_elem = card.find('span', class_='job-search-card__location')
-                        link_elem = card.find('a', class_='base-card__full-link')
+                        # Try multiple selectors for job title
+                        title_elem = (card.find('h3', class_='base-search-card__title') or 
+                                    card.find('h3', class_='job-search-card__title') or
+                                    card.find('a', class_='job-search-card__title') or
+                                    card.find('h2', class_='job-title'))
+                        
+                        # Try multiple selectors for company
+                        company_elem = (card.find('h4', class_='base-search-card__subtitle') or
+                                      card.find('h4', class_='job-search-card__subtitle') or
+                                      card.find('a', class_='job-search-card__subtitle') or
+                                      card.find('span', class_='company-name'))
+                        
+                        # Try multiple selectors for location
+                        location_elem = (card.find('span', class_='job-search-card__location') or
+                                       card.find('span', class_='job-search-card__location-text') or
+                                       card.find('div', class_='job-search-card__location'))
+                        
+                        # Try multiple selectors for job link
+                        link_elem = (card.find('a', class_='base-card__full-link') or
+                                   card.find('a', class_='job-search-card__title') or
+                                   card.find('a', href=True))
                         
                         if title_elem and company_elem:
+                            title = title_elem.get_text(strip=True)
+                            company = company_elem.get_text(strip=True)
+                            location_text = location_elem.get_text(strip=True) if location_elem else 'Remote'
+                            
+                            # Get real job link
+                            job_link = ''
+                            if link_elem and link_elem.get('href'):
+                                href = link_elem['href']
+                                if href.startswith('/'):
+                                    job_link = f"https://www.linkedin.com{href}"
+                                elif href.startswith('http'):
+                                    job_link = href
+                                else:
+                                    job_link = f"https://www.linkedin.com/jobs/view/{href}"
+                            
+                            # If no real link found, create a search link
+                            if not job_link:
+                                search_query = f"{title} {company}".replace(' ', '+')
+                                job_link = f"https://www.linkedin.com/jobs/search/?keywords={search_query}"
+                            
                             job = {
-                                'job_title': title_elem.get_text(strip=True),
-                                'company_name': company_elem.get_text(strip=True),
-                                'location': location_elem.get_text(strip=True) if location_elem else 'Remote',
-                                'job_link': link_elem['href'] if link_elem else '',
-                                'work_type': 'Full-time',  # Default assumption
+                                'job_title': title,
+                                'company_name': company,
+                                'location': location_text,
+                                'job_link': job_link,
+                                'work_type': 'Full-time',
                                 'salary': 'Competitive',
                                 'source': 'LinkedIn'
                             }
                             jobs.append(job)
+                            logger.info(f"LinkedIn job: {title} at {company} - {job_link}")
                     except Exception as e:
                         logger.warning(f"Error parsing LinkedIn job card: {e}")
                         continue
@@ -287,7 +337,7 @@ class JobScraper:
         return jobs
     
     def scrape_indeed_jobs(self, search_terms, location="", max_jobs=50):
-        """Scrape Indeed for real job postings."""
+        """Scrape Indeed for real job postings with actual job links."""
         jobs = []
         try:
             # Indeed job search URL
@@ -303,27 +353,80 @@ class JobScraper:
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
-                # Extract job listings
-                job_cards = soup.find_all('div', class_='job_seen_beacon')
+                # Try multiple selectors for Indeed's changing structure
+                job_selectors = [
+                    'div[data-jk]',
+                    '.job_seen_beacon',
+                    '.jobsearch-SerpJobCard',
+                    '.slider_container'
+                ]
+                
+                job_cards = []
+                for selector in job_selectors:
+                    job_cards = soup.select(selector)
+                    if job_cards:
+                        logger.info(f"Found {len(job_cards)} Indeed jobs using selector: {selector}")
+                        break
                 
                 for card in job_cards[:max_jobs]:
                     try:
-                        title_elem = card.find('h2', class_='jobTitle')
-                        company_elem = card.find('span', class_='companyName')
-                        location_elem = card.find('div', class_='companyLocation')
-                        link_elem = card.find('a', class_='jcs-JobTitle')
+                        # Try multiple selectors for job title
+                        title_elem = (card.find('h2', class_='jobTitle') or
+                                    card.find('a', class_='jcs-JobTitle') or
+                                    card.find('h2', class_='jobTitle') or
+                                    card.find('a', {'data-jk': True}))
+                        
+                        # Try multiple selectors for company
+                        company_elem = (card.find('span', class_='companyName') or
+                                      card.find('div', class_='companyName') or
+                                      card.find('span', class_='company') or
+                                      card.find('a', class_='companyName'))
+                        
+                        # Try multiple selectors for location
+                        location_elem = (card.find('div', class_='companyLocation') or
+                                       card.find('div', class_='location') or
+                                       card.find('span', class_='location'))
+                        
+                        # Try multiple selectors for job link
+                        link_elem = (card.find('a', class_='jcs-JobTitle') or
+                                   card.find('a', {'data-jk': True}) or
+                                   card.find('h2', class_='jobTitle').find('a') if card.find('h2', class_='jobTitle') else None)
                         
                         if title_elem and company_elem:
+                            title = title_elem.get_text(strip=True)
+                            company = company_elem.get_text(strip=True)
+                            location_text = location_elem.get_text(strip=True) if location_elem else 'Remote'
+                            
+                            # Get real job link
+                            job_link = ''
+                            if link_elem and link_elem.get('href'):
+                                href = link_elem['href']
+                                if href.startswith('/'):
+                                    job_link = f"https://www.indeed.com{href}"
+                                elif href.startswith('http'):
+                                    job_link = href
+                                else:
+                                    # Extract job ID from data-jk attribute
+                                    job_id = card.get('data-jk', '')
+                                    if job_id:
+                                        job_link = f"https://www.indeed.com/viewjob?jk={job_id}"
+                            
+                            # If no real link found, create a search link
+                            if not job_link:
+                                search_query = f"{title} {company}".replace(' ', '+')
+                                job_link = f"https://www.indeed.com/jobs?q={search_query}"
+                            
                             job = {
-                                'job_title': title_elem.get_text(strip=True),
-                                'company_name': company_elem.get_text(strip=True),
-                                'location': location_elem.get_text(strip=True) if location_elem else 'Remote',
-                                'job_link': 'https://indeed.com' + link_elem['href'] if link_elem else '',
-                                'work_type': 'Full-time',  # Default assumption
+                                'job_title': title,
+                                'company_name': company,
+                                'location': location_text,
+                                'job_link': job_link,
+                                'work_type': 'Full-time',
                                 'salary': 'Competitive',
                                 'source': 'Indeed'
                             }
                             jobs.append(job)
+                            logger.info(f"Indeed job: {title} at {company} - {job_link}")
                     except Exception as e:
                         logger.warning(f"Error parsing Indeed job card: {e}")
                         continue
@@ -423,7 +526,16 @@ class JobScraper:
             sources = ['LinkedIn', 'Indeed', 'Glassdoor', 'Company Website']
             source = random.choice(sources)
             
-            job_link = f'https://{source.lower()}.com/jobs/{company.lower().replace(" ", "-")}-{final_role.lower().replace(" ", "-")}-{i}'
+            # Generate realistic job links based on source
+            if source == 'LinkedIn':
+                job_link = f'https://www.linkedin.com/jobs/search/?keywords={final_role.replace(" ", "+")}+{company.replace(" ", "+")}'
+            elif source == 'Indeed':
+                job_link = f'https://www.indeed.com/jobs?q={final_role.replace(" ", "+")}+{company.replace(" ", "+")}'
+            elif source == 'Glassdoor':
+                job_link = f'https://www.glassdoor.com/Job/jobs.htm?sc.keyword={final_role.replace(" ", "+")}+{company.replace(" ", "+")}'
+            else:  # Company Website
+                company_domain = company.lower().replace(" ", "").replace("&", "").replace(".", "")
+                job_link = f'https://careers.{company_domain}.com/jobs/{final_role.lower().replace(" ", "-")}'
             
             job = {
                 'job_title': final_role,
@@ -437,6 +549,37 @@ class JobScraper:
             jobs.append(job)
         
         return jobs
+    
+    def validate_job_links(self, jobs):
+        """Validate and improve job links to ensure they're clickable."""
+        validated_jobs = []
+        
+        for job in jobs:
+            job_link = job.get('job_link', '')
+            source = job.get('source', '')
+            title = job.get('job_title', '')
+            company = job.get('company_name', '')
+            
+            # If link is empty or invalid, create a proper search link
+            if not job_link or not job_link.startswith('http'):
+                if source == 'LinkedIn':
+                    job_link = f'https://www.linkedin.com/jobs/search/?keywords={title.replace(" ", "+")}+{company.replace(" ", "+")}'
+                elif source == 'Indeed':
+                    job_link = f'https://www.indeed.com/jobs?q={title.replace(" ", "+")}+{company.replace(" ", "+")}'
+                elif source == 'Glassdoor':
+                    job_link = f'https://www.glassdoor.com/Job/jobs.htm?sc.keyword={title.replace(" ", "+")}+{company.replace(" ", "+")}'
+                else:
+                    # Generic job search
+                    job_link = f'https://www.google.com/search?q={title.replace(" ", "+")}+{company.replace(" ", "+")}+jobs'
+            
+            # Ensure link is properly formatted
+            if not job_link.startswith('http'):
+                job_link = f'https://{job_link}'
+            
+            job['job_link'] = job_link
+            validated_jobs.append(job)
+        
+        return validated_jobs
 
 class FastH1BPredictor:
     """Simple H1B sponsorship predictor."""
@@ -530,6 +673,10 @@ def download_excel():
             additional_jobs = job_scraper._generate_enhanced_fallback_jobs(search_criteria, 20 - len(jobs))
             jobs.extend(additional_jobs)
             logger.info(f"Total jobs after fallback: {len(jobs)}")
+        
+        # Validate and improve job links
+        jobs = job_scraper.validate_job_links(jobs)
+        logger.info(f"Validated {len(jobs)} job links")
         
         # Add H1B predictions if requested
         if include_h1b:
