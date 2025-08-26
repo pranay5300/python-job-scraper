@@ -4,52 +4,153 @@ const Auth = ({ onAuthSuccess, onAuthFailure }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [password, setPassword] = useState('');
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [changePasswordData, setChangePasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  // Backend URL configuration
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
   useEffect(() => {
     // Check if user is already authenticated
-    const storedUser = localStorage.getItem('tamuUser');
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-      onAuthSuccess(userData);
+    const storedUser = localStorage.getItem('jobDataCampUser');
+    const storedToken = localStorage.getItem('jobDataCampToken');
+    
+    if (storedUser && storedToken) {
+      // Verify session with backend
+      verifySession(storedToken, JSON.parse(storedUser));
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [onAuthSuccess]);
 
-  const handleGoogleSignIn = () => {
+  const verifySession = async (token, userData) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ session_token: token })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setUser(userData);
+        onAuthSuccess(userData);
+      } else {
+        // Session invalid, clear storage
+        localStorage.removeItem('jobDataCampUser');
+        localStorage.removeItem('jobDataCampToken');
+      }
+    } catch (error) {
+      console.error('Session verification failed:', error);
+      localStorage.removeItem('jobDataCampUser');
+      localStorage.removeItem('jobDataCampToken');
+    }
+    setIsLoading(false);
+  };
+
+  const handlePasswordLogin = async (e) => {
+    e.preventDefault();
     setError('');
     
-    // Simple email validation for demo (in production, use Google OAuth)
-    const email = prompt('Please enter your TAMU email address:');
-    
-    if (!email) {
+    if (!password) {
+      setError('Please enter a password');
       return;
     }
     
-    if (!email.endsWith('@tamu.edu')) {
-      setError('Access restricted to @tamu.edu email addresses only.');
-      onAuthFailure('Invalid email domain');
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: password })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        const userData = {
+          ...result.user,
+          authenticated: true,
+          timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('jobDataCampUser', JSON.stringify(userData));
+        localStorage.setItem('jobDataCampToken', result.session_token);
+        setUser(userData);
+        onAuthSuccess(userData);
+        setPassword('');
+      } else {
+        setError(result.message || 'Authentication failed');
+        onAuthFailure(result.message);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Unable to connect to server. Please try again.');
+      onAuthFailure('Connection error');
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    if (changePasswordData.newPassword !== changePasswordData.confirmPassword) {
+      setError('New passwords do not match');
       return;
     }
     
-    // Simulate successful authentication
-    const userData = {
-      email: email,
-      name: email.split('@')[0],
-      domain: 'tamu.edu',
-      authenticated: true,
-      timestamp: new Date().toISOString()
-    };
+    if (changePasswordData.newPassword.length < 4) {
+      setError('New password must be at least 4 characters long');
+      return;
+    }
     
-    localStorage.setItem('tamuUser', JSON.stringify(userData));
-    setUser(userData);
-    onAuthSuccess(userData);
+    try {
+      const response = await fetch(`${BACKEND_URL}/admin/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          current_password: changePasswordData.currentPassword,
+          new_password: changePasswordData.newPassword
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setError('');
+        setShowChangePassword(false);
+        setChangePasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+        alert('Password changed successfully!');
+      } else {
+        setError(result.message || 'Password change failed');
+      }
+    } catch (error) {
+      console.error('Password change error:', error);
+      setError('Unable to change password. Please try again.');
+    }
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem('tamuUser');
+    localStorage.removeItem('jobDataCampUser');
+    localStorage.removeItem('jobDataCampToken');
     setUser(null);
     setError('');
+    setPassword('');
     onAuthFailure('User signed out');
   };
 
@@ -67,11 +168,67 @@ const Auth = ({ onAuthSuccess, onAuthFailure }) => {
       <div className="auth-success">
         <div className="user-info">
           <span className="user-icon">👤</span>
-          <span className="user-email">{user.email}</span>
-          <button onClick={handleSignOut} className="sign-out-btn">
-            Sign Out
-          </button>
+          <span className="user-email">Admin Access</span>
+          <div className="user-actions">
+            <button 
+              onClick={() => setShowChangePassword(!showChangePassword)} 
+              className="change-password-btn"
+            >
+              Change Password
+            </button>
+            <button onClick={handleSignOut} className="sign-out-btn">
+              Sign Out
+            </button>
+          </div>
         </div>
+        
+        {showChangePassword && (
+          <div className="change-password-form">
+            <h4>Change Admin Password</h4>
+            <form onSubmit={handleChangePassword}>
+              <input
+                type="password"
+                placeholder="Current Password"
+                value={changePasswordData.currentPassword}
+                onChange={(e) => setChangePasswordData({
+                  ...changePasswordData,
+                  currentPassword: e.target.value
+                })}
+                required
+              />
+              <input
+                type="password"
+                placeholder="New Password"
+                value={changePasswordData.newPassword}
+                onChange={(e) => setChangePasswordData({
+                  ...changePasswordData,
+                  newPassword: e.target.value
+                })}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Confirm New Password"
+                value={changePasswordData.confirmPassword}
+                onChange={(e) => setChangePasswordData({
+                  ...changePasswordData,
+                  confirmPassword: e.target.value
+                })}
+                required
+              />
+              <div className="form-actions">
+                <button type="submit" className="submit-btn">Change Password</button>
+                <button 
+                  type="button" 
+                  onClick={() => setShowChangePassword(false)}
+                  className="cancel-btn"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     );
   }
@@ -80,14 +237,14 @@ const Auth = ({ onAuthSuccess, onAuthFailure }) => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h2>🎓 TAMU JobDataCamp Access</h2>
-          <p>Exclusive access for Texas A&M University students and faculty</p>
+          <h2>🔐 JobDataCamp Access</h2>
+          <p>Secure access to job search and H1B prediction tools</p>
         </div>
         
         <div className="auth-content">
           <div className="restriction-notice">
             <span className="lock-icon">🔒</span>
-            <p><strong>Access Restricted:</strong> Only @tamu.edu email addresses are permitted</p>
+            <p><strong>Admin Access:</strong> Enter password to access the system</p>
           </div>
           
           {error && (
@@ -97,18 +254,31 @@ const Auth = ({ onAuthSuccess, onAuthFailure }) => {
             </div>
           )}
           
-          <button onClick={handleGoogleSignIn} className="google-signin-btn">
-            <span className="google-icon">📧</span>
-            Sign in with TAMU Email
-          </button>
+          <form onSubmit={handlePasswordLogin} className="password-form">
+            <div className="password-input-group">
+              <input
+                type="password"
+                placeholder="Enter Admin Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="password-input"
+                required
+              />
+              <button type="submit" className="login-btn">
+                <span className="login-icon">🔑</span>
+                Sign In
+              </button>
+            </div>
+          </form>
           
           <div className="auth-info">
-            <h4>Why Authentication?</h4>
+            <h4>System Features</h4>
             <ul>
-              <li>🎯 Personalized job recommendations</li>
-              <li>🛂 H1B visa sponsorship predictions</li>
-              <li>📊 Exclusive access to career resources</li>
-              <li>🔐 Secure and private job search</li>
+              <li>🎯 Advanced job search with 10-second processing</li>
+              <li>🛂 USCIS-based H1B sponsorship predictions</li>
+              <li>📊 Real-time web scraping from LinkedIn & Indeed</li>
+              <li>📋 Professional Excel exports with clickable links</li>
+              <li>🔐 Secure password-based authentication</li>
             </ul>
           </div>
         </div>

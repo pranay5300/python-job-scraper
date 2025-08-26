@@ -959,6 +959,9 @@ job_db = FastJobDatabase()
 h1b_predictor = FastH1BPredictor()
 job_scraper = JobScraper()
 
+# Admin password configuration (easily changeable)
+ADMIN_PASSWORD = "kingpin"
+
 @app.route('/', methods=['GET'])
 def root():
     """Root endpoint with API information."""
@@ -966,16 +969,21 @@ def root():
         "service": "JobDataCamp API",
         "version": "1.0.0",
         "status": "healthy",
-        "description": "TAMU Job Search API with H1B Predictions",
+        "description": "Job Search API with H1B Predictions and Password Authentication",
         "endpoints": {
             "health": "/health",
-            "stats": "/stats", 
+            "stats": "/stats",
             "test_h1b": "/test_h1b",
-            "download_excel": "/download_excel"
+            "h1b_insights": "/h1b_insights",
+            "download_excel": "/download_excel",
+            "auth_login": "/auth/login",
+            "auth_verify": "/auth/verify",
+            "change_password": "/admin/change-password"
         },
         "production_url": "https://python-job-scraper.onrender.com",
         "frontend_compatible": True,
-        "cors_enabled": True
+        "cors_enabled": True,
+        "authentication": "Password-based (admin configurable)"
     })
 
 @app.route('/download_excel', methods=['GET'])
@@ -1224,6 +1232,106 @@ def h1b_insights():
         'data_source': 'USCIS H1B Sponsorship Data (2022-2024)',
         'last_updated': '2024'
     })
+
+@app.route('/auth/login', methods=['POST'])
+def login():
+    """Authenticate user with password."""
+    try:
+        data = request.get_json()
+        password = data.get('password', '')
+        
+        if password == ADMIN_PASSWORD:
+            # Generate a simple session token
+            import hashlib
+            import time
+            session_token = hashlib.md5(f"{password}{time.time()}".encode()).hexdigest()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Authentication successful',
+                'session_token': session_token,
+                'user': {
+                    'authenticated': True,
+                    'access_level': 'admin',
+                    'timestamp': datetime.now().isoformat()
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid password'
+            }), 401
+            
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Authentication failed'
+        }), 500
+
+@app.route('/auth/verify', methods=['POST'])
+def verify_session():
+    """Verify session token."""
+    try:
+        data = request.get_json()
+        session_token = data.get('session_token', '')
+        
+        # Simple token validation (in production, use proper JWT or session management)
+        if session_token and len(session_token) == 32:  # MD5 hash length
+            return jsonify({
+                'success': True,
+                'message': 'Session valid',
+                'user': {
+                    'authenticated': True,
+                    'access_level': 'admin'
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid session'
+            }), 401
+            
+    except Exception as e:
+        logger.error(f"Session verification error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Session verification failed'
+        }), 500
+
+@app.route('/admin/change-password', methods=['POST'])
+def change_password():
+    """Change admin password (requires current password)."""
+    global ADMIN_PASSWORD
+    
+    try:
+        data = request.get_json()
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+        
+        # Verify current password
+        if current_password != ADMIN_PASSWORD:
+            return jsonify({
+                'success': False,
+                'message': 'Current password is incorrect'
+            }), 401
+        
+        # Update password (in production, store securely)
+        ADMIN_PASSWORD = new_password
+        
+        logger.info("Admin password changed successfully")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Password changed successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Password change error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Password change failed'
+        }), 500
 
 def initialize_app():
     """Initialize the application."""
