@@ -110,7 +110,10 @@ const JobForm = () => {
     });
 
     // Use production backend (Render.com deployment)
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://python-job-scraper.onrender.com' 
+        : 'http://localhost:5000');
     const downloadUrl = `${backendUrl}/download_excel?${params}`;
     
     // Log for debugging (remove in production)
@@ -143,7 +146,10 @@ const JobForm = () => {
       let errorMessage = 'An error occurred while generating your job search results.';
       
       if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://python-job-scraper.onrender.com' 
+        : 'http://localhost:5000');
         
         if (backendUrl.includes('localhost')) {
           errorMessage = '🔧 Local backend server is not running. Please start the backend server:\n\n' +
