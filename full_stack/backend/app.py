@@ -155,33 +155,39 @@ class FastJobDatabase:
             where_conditions = []
             params = []
             
-            # Company filter
+            # Company filter (case-insensitive, flexible matching)
             if companies and not (len(companies) == 1 and companies[0].get('company') == 'any'):
                 company_conditions = []
                 for company in companies:
                     if company.get('company') and company['company'] != 'any':
-                        company_conditions.append('company_name LIKE ?')
-                        params.append(f"%{company['company']}%")
+                        # More flexible matching: case-insensitive, handle spaces/hyphens
+                        company_name = company['company'].lower().replace('-', ' ').replace('_', ' ')
+                        company_conditions.append('LOWER(REPLACE(REPLACE(company_name, "-", " "), "_", " ")) LIKE ?')
+                        params.append(f"%{company_name}%")
                 if company_conditions:
                     where_conditions.append(f"({' OR '.join(company_conditions)})")
             
-            # Role filter
+            # Role filter (case-insensitive, flexible matching)
             if roles and not (len(roles) == 1 and roles[0].get('role') == 'any'):
                 role_conditions = []
                 for role in roles:
                     if role.get('role') and role['role'] != 'any':
-                        role_conditions.append('job_title LIKE ?')
-                        params.append(f"%{role['role']}%")
+                        # More flexible matching: case-insensitive, handle spaces/hyphens
+                        role_name = role['role'].lower().replace('-', ' ').replace('_', ' ')
+                        role_conditions.append('LOWER(REPLACE(REPLACE(job_title, "-", " "), "_", " ")) LIKE ?')
+                        params.append(f"%{role_name}%")
                 if role_conditions:
                     where_conditions.append(f"({' OR '.join(role_conditions)})")
             
-            # Location filter
+            # Location filter (case-insensitive, flexible matching)
             if locations and not (len(locations) == 1 and locations[0].get('location') == 'any'):
                 location_conditions = []
                 for location in locations:
                     if location.get('location') and location['location'] != 'any':
-                        location_conditions.append('location LIKE ?')
-                        params.append(f"%{location['location']}%")
+                        # More flexible matching: case-insensitive, handle spaces/hyphens
+                        location_name = location['location'].lower().replace('-', ' ').replace('_', ' ')
+                        location_conditions.append('LOWER(REPLACE(REPLACE(location, "-", " "), "_", " ")) LIKE ?')
+                        params.append(f"%{location_name}%")
                 if location_conditions:
                     where_conditions.append(f"({' OR '.join(location_conditions)})")
             
@@ -336,7 +342,8 @@ def root():
             "stats": "/stats", 
             "test_h1b": "/test_h1b",
             "download_excel": "/download_excel",
-            "ip_info": "/ip_info"
+            "ip_info": "/ip_info",
+            "debug_companies": "/debug_companies"
         },
         "production_url": "https://python-job-scraper.onrender.com",
         "documentation": "See DEBUG_GUIDE.md for complete API usage",
@@ -371,8 +378,21 @@ def download_excel():
         # Search jobs
         jobs = job_db.search_jobs(companies, roles, locations, job_type)
         
+        # Debug logging
+        logger.info(f"Search criteria - Companies: {companies}, Roles: {roles}, Locations: {locations}, Job type: {job_type}")
+        logger.info(f"Found {len(jobs)} jobs matching criteria")
+        
         if not jobs:
-            return jsonify({"error": "No jobs found matching your criteria"}), 404
+            return jsonify({
+                "error": "No jobs found matching your criteria",
+                "search_criteria": {
+                    "companies": companies,
+                    "roles": roles, 
+                    "locations": locations,
+                    "job_type": job_type
+                },
+                "suggestion": "Try using broader search terms or check /debug_companies for available options"
+            }), 404
         
         # Calculate match scores
         scored_jobs = job_matcher.calculate_job_scores(jobs, companies, roles, locations, weights)
@@ -512,6 +532,41 @@ def ip_info():
                 "region": "US-West",
                 "documentation": "See RENDER_NETWORK_INFO.md"
             },
+            "status": "success"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/debug_companies', methods=['GET'])
+def debug_companies():
+    """Debug endpoint to see available companies in database."""
+    try:
+        conn = sqlite3.connect(job_db.db_path)
+        cursor = conn.cursor()
+        
+        # Get unique companies
+        cursor.execute('SELECT DISTINCT company_name FROM jobs ORDER BY company_name LIMIT 50')
+        companies = [row[0] for row in cursor.fetchall()]
+        
+        # Get total count
+        cursor.execute('SELECT COUNT(*) FROM jobs')
+        total_jobs = cursor.fetchone()[0]
+        
+        # Get sample job titles
+        cursor.execute('SELECT DISTINCT job_title FROM jobs ORDER BY job_title LIMIT 20')
+        job_titles = [row[0] for row in cursor.fetchall()]
+        
+        # Get sample locations
+        cursor.execute('SELECT DISTINCT location FROM jobs ORDER BY location LIMIT 20')
+        locations = [row[0] for row in cursor.fetchall()]
+        
+        conn.close()
+        
+        return jsonify({
+            "total_jobs": total_jobs,
+            "sample_companies": companies,
+            "sample_job_titles": job_titles,
+            "sample_locations": locations,
             "status": "success"
         })
     except Exception as e:
