@@ -1496,7 +1496,7 @@ def download_excel():
         ws.title = "Job Matches"
         
         # Define headers
-        headers = ['Job Title', 'Company Name', 'Location', 'Job Link', 'Work Type', 'Salary', 'Source']
+        headers = ['Job Title', 'Company Name', 'Location', 'Job Link', 'Work Type', 'Salary', 'Source', 'Interest Score']
         if include_h1b:
             headers.append('H1B Probability')
         
@@ -1537,10 +1537,14 @@ def download_excel():
             # Source
             ws.cell(row=row, column=7, value=job['source'])
             
+            # Interest Score (weighted mean score)
+            interest_score = self._calculate_interest_score(job, search_criteria)
+            ws.cell(row=row, column=8, value=interest_score)
+            
             # H1B Probability (if requested)
             if include_h1b:
                 h1b_value = f"{job.get('h1b_probability', 'N/A')}%"
-                ws.cell(row=row, column=8, value=h1b_value)
+                ws.cell(row=row, column=9, value=h1b_value)
         
         # Auto-adjust column widths
         for col in range(1, len(headers) + 1):
