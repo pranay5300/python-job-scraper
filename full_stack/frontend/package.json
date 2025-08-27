@@ -1,7 +1,7 @@
 {
-  "name": "full_stack_project",
+  "name": "jobdatacamp",
   "version": "1.0.0",
-  "description": "A full-stack project with React frontend and Flask backend",
+  "description": "JobDataCamp - Professional Job Search Platform with AI-Powered Matching and H1B Predictions",
   "main": "index.js",
   "scripts": {
     "start": "react-scripts start",
@@ -12,9 +12,14 @@
     "deploy": "gh-pages -d build"
   },
   "keywords": [
+    "job-search",
+    "jobdatacamp",
+    "h1b-predictions",
+    "career",
+    "employment",
+    "job-matching",
     "react",
-    "flask",
-    "full-stack"
+    "flask"
   ],
   "author": "Your Name",
   "license": "MIT",

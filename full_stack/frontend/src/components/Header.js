@@ -8,7 +8,6 @@ const Header = () => {
           <div className="logo">
             <span className="logo-icon">💼</span>
             <span className="logo-text">JobDataCamp</span>
-            <span className="tamu-badge">TAMU</span>
           </div>
         </div>
         
@@ -20,7 +19,7 @@ const Header = () => {
         </nav>
         
         <div className="user-section">
-          <span className="welcome-text">🎓 TAMU Exclusive Access</span>
+          <span className="welcome-text">🔐 Professional Job Search</span>
         </div>
       </div>
     </header>
