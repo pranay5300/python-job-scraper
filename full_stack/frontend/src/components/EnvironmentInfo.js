@@ -3,7 +3,7 @@ import React from 'react';
 const EnvironmentInfo = () => {
   const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
   const environment = process.env.REACT_APP_ENVIRONMENT || 'production';
-  const isProduction = !backendUrl.includes('localhost');
+  const isProduction = true; // Always production since we only use Render.com
 
   return (
     <div className="environment-info">

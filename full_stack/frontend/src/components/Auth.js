@@ -12,11 +12,8 @@ const Auth = ({ onAuthSuccess, onAuthFailure }) => {
     confirmPassword: ''
   });
 
-  // Backend URL configuration
-  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 
-    (process.env.NODE_ENV === 'production' 
-      ? 'https://python-job-scraper.onrender.com' 
-      : 'http://localhost:5000');
+  // Backend URL configuration - Always use Render.com
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
 
   useEffect(() => {
     // Check if user is already authenticated

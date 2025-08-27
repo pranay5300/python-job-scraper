@@ -110,10 +110,7 @@ const JobForm = () => {
     });
 
     // Use production backend (Render.com deployment)
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 
-      (process.env.NODE_ENV === 'production' 
-        ? 'https://python-job-scraper.onrender.com' 
-        : 'http://localhost:5000');
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
     const downloadUrl = `${backendUrl}/download_excel?${params}`;
     
     // Log for debugging (remove in production)
@@ -146,28 +143,16 @@ const JobForm = () => {
       let errorMessage = 'An error occurred while generating your job search results.';
       
       if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 
-      (process.env.NODE_ENV === 'production' 
-        ? 'https://python-job-scraper.onrender.com' 
-        : 'http://localhost:5000');
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
         
-        if (backendUrl.includes('localhost')) {
-          errorMessage = '🔧 Local backend server is not running. Please start the backend server:\n\n' +
-                       '1. Open terminal\n' +
-                       '2. Run: cd /workspace && ./start_servers.sh\n' +
-                       '3. Wait for servers to start\n' +
-                       '4. Try your search again\n\n' +
-                       'Backend should be available at: http://localhost:5000';
-        } else {
-          errorMessage = '🌐 Cannot connect to production backend server.\n\n' +
-                       `Backend URL: ${backendUrl}\n\n` +
-                       'The backend is deployed on Render.com. Possible issues:\n' +
-                       '• Render server may be experiencing downtime\n' +
-                       '• Network connectivity issues\n' +
-                       '• CORS configuration problems\n' +
-                       '• Cold start delay (Render free tier)\n\n' +
-                       'Please wait a moment and try again. Render services may take 10-15 seconds to start from sleep.';
-        }
+        errorMessage = '🌐 Cannot connect to production backend server.\n\n' +
+                     `Backend URL: ${backendUrl}\n\n` +
+                     'The backend is deployed on Render.com. Possible issues:\n' +
+                     '• Render server may be experiencing downtime\n' +
+                     '• Network connectivity issues\n' +
+                     '• CORS configuration problems\n' +
+                     '• Cold start delay (Render free tier)\n\n' +
+                     'Please wait a moment and try again. Render services may take 10-15 seconds to start from sleep.';
       } else if (error.message.includes('NetworkError')) {
         errorMessage = '🌐 Network connection issue. Please check your internet connection and try again.';
       } else {

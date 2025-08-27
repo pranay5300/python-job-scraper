@@ -88,23 +88,7 @@ const BackendStatus = () => {
   const handleStartServers = () => {
     const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
     
-    if (backendUrl.includes('localhost')) {
-      const instructions = `To start the LOCAL backend server:
-
-1. Open a terminal
-2. Run: cd /workspace && ./start_servers.sh
-3. Wait for "✅ Backend started successfully" message
-4. Refresh this page
-
-Or manually:
-1. cd /workspace/full_stack/backend
-2. python3 app.py
-
-The backend should then be available at http://localhost:5000`;
-      
-      alert(instructions);
-          } else {
-        const instructions = `PRODUCTION BACKEND STATUS (Render.com):
+    const instructions = `PRODUCTION BACKEND STATUS (Render.com):
 
 Backend URL: ${backendUrl}
 
@@ -120,9 +104,8 @@ The backend is deployed on Render.com which may have cold start delays.
 For local development:
 1. Update .env file to use: REACT_APP_BACKEND_URL=http://localhost:5000
 2. Start local backend with: ./start_servers.sh`;
-      
-      alert(instructions);
-    }
+    
+    alert(instructions);
   };
 
   return (
