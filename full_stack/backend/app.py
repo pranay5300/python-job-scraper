@@ -685,19 +685,31 @@ class JobScraper:
         return jobs
     
     def _generate_realistic_job_link(self, role, company, location):
-        """Generate realistic job links that look like real job postings."""
-        # Create realistic job posting URLs
-        company_clean = company.lower().replace(' ', '-').replace('&', 'and').replace('.', '')
-        role_clean = role.lower().replace(' ', '-').replace(',', '').replace('&', 'and')
-        location_clean = location.lower().replace(' ', '-').replace(',', '').replace('&', 'and')
+        """Generate realistic job links that actually work."""
+        # Create working job search URLs on major job platforms
+        role_clean = role.lower().replace(' ', '+').replace(',', '').replace('&', 'and')
+        company_clean = company.lower().replace(' ', '+').replace(',', '').replace('&', 'and')
+        location_clean = location.lower().replace(' ', '+').replace(',', '').replace('&', 'and')
         
-        # Generate realistic job ID
+        # Generate a random job ID for uniqueness
         job_id = random.randint(100000, 999999)
         
-        # Create realistic job posting URL
-        job_link = f"https://careers.{company_clean}.com/jobs/{job_id}-{role_clean}-{location_clean}"
+        # Create working job search URLs on major platforms
+        job_links = [
+            # LinkedIn job search
+            f"https://www.linkedin.com/jobs/search/?keywords={role_clean}+{company_clean}&location={location_clean}",
+            # Indeed job search  
+            f"https://www.indeed.com/jobs?q={role_clean}+{company_clean}&l={location_clean}",
+            # Glassdoor job search
+            f"https://www.glassdoor.com/Job/jobs.htm?sc.keyword={role_clean}+{company_clean}&locT=C&locId=1",
+            # ZipRecruiter job search
+            f"https://www.ziprecruiter.com/jobs-search?search={role_clean}+{company_clean}&location={location_clean}",
+            # CareerBuilder job search
+            f"https://www.careerbuilder.com/jobs?keywords={role_clean}+{company_clean}&location={location_clean}"
+        ]
         
-        return job_link
+        # Return a random working job search URL
+        return random.choice(job_links)
     
 
     
@@ -792,29 +804,34 @@ class JobScraper:
         return jobs
     
     def _generate_matching_job_link(self, role, company, location, source, job_id):
-        """Generate job links that match the specific job data."""
+        """Generate working job links that match the specific job data."""
         
         # Clean and format the data for URL generation
-        clean_role = role.lower().replace(" ", "-").replace(",", "").replace("&", "and")
-        clean_company = company.lower().replace(" ", "-").replace(",", "").replace("&", "and").replace(".", "")
-        clean_location = location.lower().replace(" ", "-").replace(",", "").replace("&", "and")
+        clean_role = role.lower().replace(" ", "+").replace(",", "").replace("&", "and")
+        clean_company = company.lower().replace(" ", "+").replace(",", "").replace("&", "and").replace(".", "")
+        clean_location = location.lower().replace(" ", "+").replace(",", "").replace("&", "and")
         
         # Generate realistic job IDs
         job_id_hash = hash(f"{company}{role}{location}{job_id}") % 1000000
         
         if source == 'LinkedIn':
-            # LinkedIn job posting URL format
-            job_link = f"https://www.linkedin.com/jobs/view/{job_id_hash}-{clean_role}-{clean_company}-{clean_location}"
+            # LinkedIn job search URL format (working)
+            job_link = f"https://www.linkedin.com/jobs/search/?keywords={clean_role}+{clean_company}&location={clean_location}"
         elif source == 'Indeed':
-            # Indeed job posting URL format
-            job_link = f"https://www.indeed.com/viewjob?jk={job_id_hash}&title={clean_role}&company={clean_company}&location={clean_location}"
+            # Indeed job search URL format (working)
+            job_link = f"https://www.indeed.com/jobs?q={clean_role}+{clean_company}&l={clean_location}"
         elif source == 'Glassdoor':
-            # Glassdoor job posting URL format
-            job_link = f"https://www.glassdoor.com/Job/jobs.htm?sc.keyword={clean_role}&locT=C&locId={job_id_hash}&jobTitle={clean_role}&companyName={clean_company}"
-        else:  # Company Website
-            # Company career page URL format
-            company_domain = clean_company.replace("-", "")
-            job_link = f"https://careers.{company_domain}.com/jobs/{job_id_hash}-{clean_role}-{clean_location}"
+            # Glassdoor job search URL format (working)
+            job_link = f"https://www.glassdoor.com/Job/jobs.htm?sc.keyword={clean_role}+{clean_company}&locT=C&locId=1"
+        elif source == 'ZipRecruiter':
+            # ZipRecruiter job search URL format (working)
+            job_link = f"https://www.ziprecruiter.com/jobs-search?search={clean_role}+{clean_company}&location={clean_location}"
+        elif source == 'CareerBuilder':
+            # CareerBuilder job search URL format (working)
+            job_link = f"https://www.careerbuilder.com/jobs?keywords={clean_role}+{clean_company}&location={clean_location}"
+        else:  # Company Website or other sources
+            # Use LinkedIn as fallback (most reliable)
+            job_link = f"https://www.linkedin.com/jobs/search/?keywords={clean_role}+{clean_company}&location={clean_location}"
         
         return job_link
     
