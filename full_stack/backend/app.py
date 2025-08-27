@@ -888,9 +888,41 @@ class JobScraper:
         # Return a random working job search URL
         return random.choice(job_links)
     
-
-    
-
+    def _calculate_interest_score(self, job, search_criteria):
+        """Calculate interest score as weighted mean percentage (0-100%)."""
+        try:
+            # Extract search criteria
+            companies = [c.get('company', '').lower() for c in search_criteria.get('companies', []) if c.get('company', '').lower() not in ['any', '']]
+            roles = [r.get('role', '').lower() for r in search_criteria.get('roles', []) if r.get('role', '').lower() not in ['any', '']]
+            locations = [l.get('location', '').lower() for l in search_criteria.get('locations', []) if l.get('location', '')]
+            
+            # Get weights (default to equal weights if not specified)
+            company_weight = search_criteria.get('company_weight', 100)
+            role_weight = search_criteria.get('role_weight', 100) 
+            location_weight = search_criteria.get('location_weight', 100)
+            
+            # Calculate binary matches (1 for match, 0 for no match)
+            company_match = 1 if any(comp in job['company_name'].lower() for comp in companies) else 0
+            role_match = 1 if any(role in job['job_title'].lower() for role in roles) else 0
+            location_match = 1 if any(loc in job['location'].lower() for loc in locations) else 0
+            
+            # Calculate weighted mean score: ((wt%*role)+(wt%*location)+(wt%*company))/300% * 100
+            total_weight = company_weight + role_weight + location_weight
+            if total_weight == 0:
+                total_weight = 300  # Default to 300 if no weights specified
+            
+            weighted_score = (
+                (company_weight * company_match) + 
+                (role_weight * role_match) + 
+                (location_weight * location_match)
+            ) / total_weight * 100
+            
+            # Round to 2 decimal places for clean display
+            return round(weighted_score, 2)
+            
+        except Exception as e:
+            logger.warning(f"Error calculating interest score: {e}")
+            return 0.0
     
     def _generate_enhanced_fallback_jobs(self, search_criteria, count):
         """Generate enhanced fallback jobs based on search criteria."""
@@ -1538,7 +1570,7 @@ def download_excel():
             ws.cell(row=row, column=7, value=job['source'])
             
             # Interest Score (weighted mean score)
-            interest_score = self._calculate_interest_score(job, search_criteria)
+            interest_score = job_scraper._calculate_interest_score(job, search_criteria)
             ws.cell(row=row, column=8, value=interest_score)
             
             # H1B Probability (if requested)
