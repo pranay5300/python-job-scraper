@@ -686,15 +686,157 @@ class JobScraper:
                 if not location_match:
                     matches_criteria = False
             
-            # Job type filter
-            if job_type and job_type != 'any':
-                if job_type not in job['work_type'].lower():
+            # Job type filter - comprehensive employment type matching
+            if job_type and job_type.lower() != 'any':
+                if not self._job_matches_employment_type(job, job_type):
                     matches_criteria = False
             
             if matches_criteria:
                 validated_jobs.append(job)
         
         return validated_jobs
+    
+    def _job_matches_employment_type(self, job, target_employment_type):
+        """Check if job matches the target employment type."""
+        job_title_lower = job['job_title'].lower()
+        work_type_lower = job.get('work_type', '').lower()
+        
+        target_type = target_employment_type.lower()
+        
+        # Employment type keywords and patterns
+        employment_patterns = {
+            'internship': {
+                'title_keywords': ['intern', 'internship', 'co-op', 'coop', 'student', 'graduate'],
+                'work_type_keywords': ['internship', 'intern', 'part-time', 'temporary', 'co-op'],
+                'exclude_keywords': ['senior', 'lead', 'director', 'principal', 'staff']
+            },
+            'full-time': {
+                'title_keywords': ['engineer', 'manager', 'analyst', 'specialist', 'coordinator', 'associate'],
+                'work_type_keywords': ['full-time', 'fulltime', 'permanent', 'regular'],
+                'exclude_keywords': ['intern', 'internship', 'part-time', 'temporary', 'contract']
+            },
+            'part-time': {
+                'title_keywords': ['part-time', 'parttime', 'flexible', 'casual'],
+                'work_type_keywords': ['part-time', 'parttime', 'flexible', 'casual'],
+                'exclude_keywords': ['intern', 'internship', 'full-time', 'permanent']
+            },
+            'contract': {
+                'title_keywords': ['contract', 'temporary', 'temp', 'freelance', 'consultant'],
+                'work_type_keywords': ['contract', 'temporary', 'temp', 'freelance', 'consultant'],
+                'exclude_keywords': ['intern', 'internship', 'permanent', 'regular']
+            },
+            'remote': {
+                'title_keywords': ['remote', 'virtual', 'telecommute', 'work from home'],
+                'work_type_keywords': ['remote', 'virtual', 'telecommute', 'work from home'],
+                'exclude_keywords': []
+            },
+            'hybrid': {
+                'title_keywords': ['hybrid', 'flexible', 'on-site', 'onsite'],
+                'work_type_keywords': ['hybrid', 'flexible', 'on-site', 'onsite'],
+                'exclude_keywords': []
+            }
+        }
+        
+        if target_type not in employment_patterns:
+            return True  # If unknown employment type, don't filter
+        
+        pattern = employment_patterns[target_type]
+        
+        # Check if job title contains required keywords
+        title_match = any(keyword in job_title_lower for keyword in pattern['title_keywords'])
+        
+        # Check if work type matches
+        work_type_match = any(keyword in work_type_lower for keyword in pattern['work_type_keywords'])
+        
+        # Check if job title contains excluded keywords
+        has_excluded = any(keyword in job_title_lower for keyword in pattern['exclude_keywords'])
+        
+        # For internships, require title keywords and no excluded keywords
+        if target_type == 'internship':
+            return title_match and not has_excluded
+        
+        # For other types, check title or work type match
+        return (title_match or work_type_match) and not has_excluded
+    
+    def _generate_employment_type_job_title(self, base_role, employment_type):
+        """Generate employment type-appropriate job titles."""
+        employment_type = employment_type.lower()
+        
+        # Employment type-specific title modifications
+        title_modifications = {
+            'internship': {
+                'Software Engineer': ['Software Engineering Intern', 'Software Development Intern', 'Engineering Intern'],
+                'Data Scientist': ['Data Science Intern', 'Machine Learning Intern', 'AI Research Intern'],
+                'Product Manager': ['Product Management Intern', 'Product Intern', 'Business Intern'],
+                'Operations Manager': ['Operations Intern', 'Business Operations Intern', 'Process Improvement Intern'],
+                'Business Analyst': ['Business Analyst Intern', 'Data Analyst Intern', 'Strategy Intern'],
+                'Supply Chain Analyst': ['Supply Chain Intern', 'Logistics Intern', 'Operations Intern'],
+                'Marketing Manager': ['Marketing Intern', 'Digital Marketing Intern', 'Brand Intern'],
+                'Sales Manager': ['Sales Intern', 'Business Development Intern', 'Account Management Intern']
+            },
+            'part-time': {
+                'Software Engineer': ['Part-time Software Engineer', 'Software Engineer (Part-time)', 'Software Developer (Part-time)'],
+                'Data Scientist': ['Part-time Data Scientist', 'Data Analyst (Part-time)', 'Business Intelligence Analyst (Part-time)'],
+                'Product Manager': ['Part-time Product Manager', 'Product Coordinator (Part-time)', 'Business Analyst (Part-time)'],
+                'Operations Manager': ['Part-time Operations Manager', 'Operations Coordinator (Part-time)', 'Process Analyst (Part-time)'],
+                'Business Analyst': ['Part-time Business Analyst', 'Business Analyst (Part-time)', 'Data Analyst (Part-time)'],
+                'Supply Chain Analyst': ['Part-time Supply Chain Analyst', 'Logistics Coordinator (Part-time)', 'Operations Analyst (Part-time)'],
+                'Marketing Manager': ['Part-time Marketing Manager', 'Marketing Coordinator (Part-time)', 'Digital Marketing Specialist (Part-time)'],
+                'Sales Manager': ['Part-time Sales Manager', 'Sales Representative (Part-time)', 'Account Manager (Part-time)']
+            },
+            'contract': {
+                'Software Engineer': ['Contract Software Engineer', 'Software Engineer (Contract)', 'Software Developer (Contract)'],
+                'Data Scientist': ['Contract Data Scientist', 'Data Scientist (Contract)', 'Machine Learning Engineer (Contract)'],
+                'Product Manager': ['Contract Product Manager', 'Product Manager (Contract)', 'Technical Product Manager (Contract)'],
+                'Operations Manager': ['Contract Operations Manager', 'Operations Manager (Contract)', 'Process Improvement Manager (Contract)'],
+                'Business Analyst': ['Contract Business Analyst', 'Business Analyst (Contract)', 'Data Analyst (Contract)'],
+                'Supply Chain Analyst': ['Contract Supply Chain Analyst', 'Supply Chain Analyst (Contract)', 'Logistics Analyst (Contract)'],
+                'Marketing Manager': ['Contract Marketing Manager', 'Marketing Manager (Contract)', 'Digital Marketing Manager (Contract)'],
+                'Sales Manager': ['Contract Sales Manager', 'Sales Manager (Contract)', 'Business Development Manager (Contract)']
+            },
+            'remote': {
+                'Software Engineer': ['Remote Software Engineer', 'Software Engineer (Remote)', 'Software Developer (Remote)'],
+                'Data Scientist': ['Remote Data Scientist', 'Data Scientist (Remote)', 'Machine Learning Engineer (Remote)'],
+                'Product Manager': ['Remote Product Manager', 'Product Manager (Remote)', 'Technical Product Manager (Remote)'],
+                'Operations Manager': ['Remote Operations Manager', 'Operations Manager (Remote)', 'Process Improvement Manager (Remote)'],
+                'Business Analyst': ['Remote Business Analyst', 'Business Analyst (Remote)', 'Data Analyst (Remote)'],
+                'Supply Chain Analyst': ['Remote Supply Chain Analyst', 'Supply Chain Analyst (Remote)', 'Logistics Analyst (Remote)'],
+                'Marketing Manager': ['Remote Marketing Manager', 'Marketing Manager (Remote)', 'Digital Marketing Manager (Remote)'],
+                'Sales Manager': ['Remote Sales Manager', 'Sales Manager (Remote)', 'Business Development Manager (Remote)']
+            },
+            'hybrid': {
+                'Software Engineer': ['Hybrid Software Engineer', 'Software Engineer (Hybrid)', 'Software Developer (Hybrid)'],
+                'Data Scientist': ['Hybrid Data Scientist', 'Data Scientist (Hybrid)', 'Machine Learning Engineer (Hybrid)'],
+                'Product Manager': ['Hybrid Product Manager', 'Product Manager (Hybrid)', 'Technical Product Manager (Hybrid)'],
+                'Operations Manager': ['Hybrid Operations Manager', 'Operations Manager (Hybrid)', 'Process Improvement Manager (Hybrid)'],
+                'Business Analyst': ['Hybrid Business Analyst', 'Business Analyst (Hybrid)', 'Data Analyst (Hybrid)'],
+                'Supply Chain Analyst': ['Hybrid Supply Chain Analyst', 'Supply Chain Analyst (Hybrid)', 'Logistics Analyst (Hybrid)'],
+                'Marketing Manager': ['Hybrid Marketing Manager', 'Marketing Manager (Hybrid)', 'Digital Marketing Manager (Hybrid)'],
+                'Sales Manager': ['Hybrid Sales Manager', 'Sales Manager (Hybrid)', 'Business Development Manager (Hybrid)']
+            }
+        }
+        
+        # For full-time, return base role as-is
+        if employment_type == 'full-time':
+            return base_role
+        
+        # For other employment types, use modified titles
+        if employment_type in title_modifications and base_role in title_modifications[employment_type]:
+            return random.choice(title_modifications[employment_type][base_role])
+        
+        # Fallback: add employment type to base role
+        if employment_type == 'internship':
+            return f"{base_role} Intern"
+        elif employment_type == 'part-time':
+            return f"{base_role} (Part-time)"
+        elif employment_type == 'contract':
+            return f"{base_role} (Contract)"
+        elif employment_type == 'remote':
+            return f"{base_role} (Remote)"
+        elif employment_type == 'hybrid':
+            return f"{base_role} (Hybrid)"
+        
+        return base_role
     
     def _generate_high_quality_jobs(self, search_criteria, count):
         """Generate high-quality fallback jobs with consistent location matching."""
@@ -728,19 +870,22 @@ class JobScraper:
         
         for i in range(count):
             company = random.choice(target_companies)
-            role = random.choice(target_roles)
+            base_role = random.choice(target_roles)
             
             # Ensure location matches company (e.g., Google jobs in SF/MTV, Microsoft in Seattle)
             location = self._get_matching_location_for_company(company, target_locations)
             
+            # Generate employment type-appropriate job title
+            job_title = self._generate_employment_type_job_title(base_role, job_type)
+            
             # Generate realistic salary
-            salary = self._generate_realistic_salary(role, company, location)
+            salary = self._generate_realistic_salary(job_title, company, location)
             
             # Generate realistic job link
-            job_link = self._generate_realistic_job_link(role, company, location)
+            job_link = self._generate_realistic_job_link(job_title, company, location)
             
             job = {
-                'job_title': role,
+                'job_title': job_title,
                 'company_name': company,
                 'location': location,
                 'job_link': job_link,
