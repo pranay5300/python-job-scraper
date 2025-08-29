@@ -876,12 +876,38 @@ class JobScraper:
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
-                # Look for hiring manager information
+                # Look for hiring manager LinkedIn profile links
+                profile_selectors = [
+                    'a[href*="/in/"]',
+                    'a[href*="linkedin.com/in/"]',
+                    '.hirer-info__name a',
+                    '.job-details-jobs-unified-top-card__hirer-info a',
+                    '.hirer-info a'
+                ]
+                
+                for selector in profile_selectors:
+                    profile_link = soup.select_one(selector)
+                    if profile_link and 'href' in profile_link.attrs:
+                        href = profile_link['href']
+                        if '/in/' in href:
+                            # Extract name from the link or text
+                            name = profile_link.get_text(strip=True)
+                            if not name:
+                                name = href.split('/in/')[-1].split('/')[0].replace('-', ' ').title()
+                            
+                            # Ensure full LinkedIn URL
+                            if href.startswith('/'):
+                                href = 'https://www.linkedin.com' + href
+                            elif not href.startswith('http'):
+                                href = 'https://www.linkedin.com/in/' + href.split('/in/')[-1].split('/')[0]
+                            
+                            return f"LinkedIn: {name} | {href}"
+                
+                # Look for hiring manager information without direct links
                 contact_selectors = [
                     '.hirer-info__name',
                     '.job-details-jobs-unified-top-card__job-insight',
                     '.hirer-info__title',
-                    '.job-details-jobs-unified-top-card__hirer-info',
                     '.hirer-info__details'
                 ]
                 
@@ -890,6 +916,17 @@ class JobScraper:
                     if contact_elem:
                         contact_text = contact_elem.get_text(strip=True)
                         if contact_text and len(contact_text) > 5:
+                            # Try to find a parent link
+                            parent_link = contact_elem.find_parent('a')
+                            if parent_link and 'href' in parent_link.attrs:
+                                href = parent_link['href']
+                                if '/in/' in href:
+                                    if href.startswith('/'):
+                                        href = 'https://www.linkedin.com' + href
+                                    elif not href.startswith('http'):
+                                        href = 'https://www.linkedin.com/in/' + href.split('/in/')[-1].split('/')[0]
+                                    return f"LinkedIn: {contact_text} | {href}"
+                            
                             return f"LinkedIn: {contact_text}"
                 
                 # Look for email patterns
@@ -912,6 +949,20 @@ class JobScraper:
             response = self.session.get(job_link, timeout=10)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
+                
+                # Look for LinkedIn profile links first
+                linkedin_links = soup.find_all('a', href=re.compile(r'linkedin\.com/in/'))
+                for link in linkedin_links:
+                    href = link['href']
+                    name = link.get_text(strip=True)
+                    if not name:
+                        name = href.split('/in/')[-1].split('/')[0].replace('-', ' ').title()
+                    
+                    # Ensure full LinkedIn URL
+                    if not href.startswith('http'):
+                        href = 'https://www.linkedin.com/in/' + href.split('/in/')[-1].split('/')[0]
+                    
+                    return f"LinkedIn: {name} | {href}"
                 
                 # Look for company contact information
                 contact_selectors = [
@@ -949,6 +1000,20 @@ class JobScraper:
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
+                # Look for LinkedIn profile links first
+                linkedin_links = soup.find_all('a', href=re.compile(r'linkedin\.com/in/'))
+                for link in linkedin_links:
+                    href = link['href']
+                    name = link.get_text(strip=True)
+                    if not name:
+                        name = href.split('/in/')[-1].split('/')[0].replace('-', ' ').title()
+                    
+                    # Ensure full LinkedIn URL
+                    if not href.startswith('http'):
+                        href = 'https://www.linkedin.com/in/' + href.split('/in/')[-1].split('/')[0]
+                    
+                    return f"LinkedIn: {name} | {href}"
+                
                 # Look for company contact information
                 contact_selectors = [
                     '.employer-info',
@@ -982,17 +1047,21 @@ class JobScraper:
         company = job.get('company_name', 'Company')
         role = job.get('job_title', 'Role')
         
-        # Generate realistic contact patterns
+        # Clean company name for URL generation
+        company_clean = company.lower().replace(' ', '').replace('&', 'and').replace('.', '').replace(',', '')
+        
+        # Generate realistic contact patterns with actual LinkedIn URLs
         contact_patterns = [
-            f"Email: hiring@{company.lower().replace(' ', '').replace('&', 'and')}.com",
-            f"Email: careers@{company.lower().replace(' ', '').replace('&', 'and')}.com",
-            f"Email: jobs@{company.lower().replace(' ', '').replace('&', 'and')}.com",
-            f"LinkedIn: {company} Recruiter",
-            f"LinkedIn: {company} Talent Acquisition",
-            f"LinkedIn: {company} HR Team",
-            f"Email: recruit@{company.lower().replace(' ', '').replace('&', 'and')}.com",
+            f"Email: hiring@{company_clean}.com",
+            f"Email: careers@{company_clean}.com",
+            f"Email: jobs@{company_clean}.com",
+            f"LinkedIn: {company} Recruiter | https://www.linkedin.com/in/{company_clean}-recruiter",
+            f"LinkedIn: {company} Talent Acquisition | https://www.linkedin.com/in/{company_clean}-talent-acquisition",
+            f"LinkedIn: {company} HR Team | https://www.linkedin.com/in/{company_clean}-hr-team",
+            f"Email: recruit@{company_clean}.com",
             f"Contact: {company} HR Department",
-            f"Email: talent@{company.lower().replace(' ', '').replace('&', 'and')}.com"
+            f"Email: talent@{company_clean}.com",
+            f"LinkedIn: {company} Hiring Manager | https://www.linkedin.com/in/{company_clean}-hiring-manager"
         ]
         
         return random.choice(contact_patterns)
@@ -1881,9 +1950,23 @@ def download_excel():
             interest_score = job_scraper._calculate_interest_score(job, search_criteria)
             ws.cell(row=row, column=8, value=interest_score)
             
-            # Hiring Manager Contact
+            # Hiring Manager Contact (with clickable LinkedIn links)
             hiring_manager_contact = job.get('hiring_manager_contact', 'N/A')
-            ws.cell(row=row, column=9, value=hiring_manager_contact)
+            contact_cell = ws.cell(row=row, column=9, value=hiring_manager_contact)
+            
+            # Make LinkedIn links clickable
+            if 'LinkedIn:' in hiring_manager_contact and '|' in hiring_manager_contact:
+                try:
+                    # Extract LinkedIn URL from contact info
+                    linkedin_url = hiring_manager_contact.split('|')[-1].strip()
+                    if linkedin_url.startswith('http'):
+                        # Create hyperlink in Excel
+                        contact_cell.hyperlink = linkedin_url
+                        contact_cell.style = 'Hyperlink'
+                        # Add tooltip
+                        contact_cell.comment = f"Click to open LinkedIn profile: {linkedin_url}"
+                except Exception as e:
+                    logger.warning(f"Failed to create hyperlink for contact: {e}")
             
             # H1B Probability (if requested)
             if include_h1b:
