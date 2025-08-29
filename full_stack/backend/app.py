@@ -859,6 +859,14 @@ class JobScraper:
                     # For generated jobs or unknown sources, create realistic contact info
                     contact_info = self._generate_realistic_contact(job)
                 
+                # If no email found, try company career pages
+                if not contact_info.startswith('Email:') and 'Contact info unavailable' not in contact_info:
+                    company_name = job.get('company_name', '')
+                    if company_name:
+                        career_email = self._extract_company_career_emails(company_name)
+                        if career_email:
+                            contact_info = career_email
+                
                 job['hiring_manager_contact'] = contact_info
                 logger.info(f"Job {i+1}: Extracted contact: {contact_info}")
                 
@@ -868,6 +876,45 @@ class JobScraper:
         
         return jobs
     
+    def _extract_company_career_emails(self, company_name):
+        """Extract hiring emails from company career pages."""
+        try:
+            # Common career page patterns for major companies
+            career_urls = [
+                f"https://careers.{company_name.lower().replace(' ', '').replace('&', 'and')}.com",
+                f"https://jobs.{company_name.lower().replace(' ', '').replace('&', 'and')}.com",
+                f"https://{company_name.lower().replace(' ', '').replace('&', 'and')}.com/careers",
+                f"https://{company_name.lower().replace(' ', '').replace('&', 'and')}.com/jobs"
+            ]
+            
+            for url in career_urls:
+                try:
+                    response = self.session.get(url, timeout=8)
+                    if response.status_code == 200:
+                        soup = BeautifulSoup(response.content, 'html.parser')
+                        
+                        # Look for hiring-related emails
+                        email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+                        emails = re.findall(email_pattern, response.text)
+                        
+                        hiring_emails = []
+                        for email in emails:
+                            email_lower = email.lower()
+                            if any(keyword in email_lower for keyword in ['hiring', 'careers', 'jobs', 'recruit', 'talent', 'hr', 'recruiting']):
+                                hiring_emails.append(email)
+                        
+                        if hiring_emails:
+                            return f"Email: {hiring_emails[0]} (from company career page)"
+                        
+                except Exception as e:
+                    continue
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Company career page email extraction failed: {e}")
+            return None
+    
     def _extract_linkedin_contact(self, job_link):
         """Extract hiring manager contact from LinkedIn job posting."""
         try:
@@ -876,39 +923,32 @@ class JobScraper:
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
-                # Look for hiring manager LinkedIn profile links
-                profile_selectors = [
-                    'a[href*="/in/"]',
-                    'a[href*="linkedin.com/in/"]',
-                    '.hirer-info__name a',
-                    '.job-details-jobs-unified-top-card__hirer-info a',
-                    '.hirer-info a'
-                ]
+                # Look for email patterns first (most reliable)
+                email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+                emails = re.findall(email_pattern, response.text)
                 
-                for selector in profile_selectors:
-                    profile_link = soup.select_one(selector)
-                    if profile_link and 'href' in profile_link.attrs:
-                        href = profile_link['href']
-                        if '/in/' in href:
-                            # Extract name from the link or text
-                            name = profile_link.get_text(strip=True)
-                            if not name:
-                                name = href.split('/in/')[-1].split('/')[0].replace('-', ' ').title()
-                            
-                            # Ensure full LinkedIn URL
-                            if href.startswith('/'):
-                                href = 'https://www.linkedin.com' + href
-                            elif not href.startswith('http'):
-                                href = 'https://www.linkedin.com/in/' + href.split('/in/')[-1].split('/')[0]
-                            
-                            return f"LinkedIn: {name} | {href}"
+                # Filter out common non-hiring emails
+                hiring_emails = []
+                for email in emails:
+                    email_lower = email.lower()
+                    # Look for hiring-related email addresses
+                    if any(keyword in email_lower for keyword in ['hiring', 'careers', 'jobs', 'recruit', 'talent', 'hr', 'recruiting']):
+                        hiring_emails.append(email)
+                    # Also include company domain emails that might be hiring managers
+                    elif '@' in email and len(email.split('@')[0]) > 3:  # Reasonable name length
+                        hiring_emails.append(email)
                 
-                # Look for hiring manager information without direct links
+                if hiring_emails:
+                    return f"Email: {hiring_emails[0]}"
+                
+                # Look for hiring manager information
                 contact_selectors = [
                     '.hirer-info__name',
                     '.job-details-jobs-unified-top-card__job-insight',
                     '.hirer-info__title',
-                    '.hirer-info__details'
+                    '.hirer-info__details',
+                    '.hirer-info__contact',
+                    '.job-details-jobs-unified-top-card__hirer-info'
                 ]
                 
                 for selector in contact_selectors:
@@ -916,31 +956,18 @@ class JobScraper:
                     if contact_elem:
                         contact_text = contact_elem.get_text(strip=True)
                         if contact_text and len(contact_text) > 5:
-                            # Try to find a parent link
-                            parent_link = contact_elem.find_parent('a')
-                            if parent_link and 'href' in parent_link.attrs:
-                                href = parent_link['href']
-                                if '/in/' in href:
-                                    if href.startswith('/'):
-                                        href = 'https://www.linkedin.com' + href
-                                    elif not href.startswith('http'):
-                                        href = 'https://www.linkedin.com/in/' + href.split('/in/')[-1].split('/')[0]
-                                    return f"LinkedIn: {contact_text} | {href}"
-                            
-                            return f"LinkedIn: {contact_text}"
+                            return f"Contact: {contact_text}"
                 
-                # Look for email patterns
-                email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-                emails = re.findall(email_pattern, response.text)
+                # Look for any remaining emails
                 if emails:
                     return f"Email: {emails[0]}"
                 
-                return "LinkedIn: Hiring Manager info available on job page"
+                return "Contact: Hiring Manager info available on job page"
             
         except Exception as e:
             logger.warning(f"LinkedIn contact extraction failed: {e}")
         
-        return "LinkedIn: Contact info available on job page"
+        return "Contact: Hiring Manager info available on job page"
     
     def _extract_indeed_contact(self, job_link):
         """Extract hiring manager contact from Indeed job posting."""
@@ -950,19 +977,23 @@ class JobScraper:
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
-                # Look for LinkedIn profile links first
-                linkedin_links = soup.find_all('a', href=re.compile(r'linkedin\.com/in/'))
-                for link in linkedin_links:
-                    href = link['href']
-                    name = link.get_text(strip=True)
-                    if not name:
-                        name = href.split('/in/')[-1].split('/')[0].replace('-', ' ').title()
-                    
-                    # Ensure full LinkedIn URL
-                    if not href.startswith('http'):
-                        href = 'https://www.linkedin.com/in/' + href.split('/in/')[-1].split('/')[0]
-                    
-                    return f"LinkedIn: {name} | {href}"
+                # Look for email patterns first (most reliable)
+                email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+                emails = re.findall(email_pattern, response.text)
+                
+                # Filter out common non-hiring emails
+                hiring_emails = []
+                for email in emails:
+                    email_lower = email.lower()
+                    # Look for hiring-related email addresses
+                    if any(keyword in email_lower for keyword in ['hiring', 'careers', 'jobs', 'recruit', 'talent', 'hr', 'recruiting']):
+                        hiring_emails.append(email)
+                    # Also include company domain emails that might be hiring managers
+                    elif '@' in email and len(email.split('@')[0]) > 3:  # Reasonable name length
+                        hiring_emails.append(email)
+                
+                if hiring_emails:
+                    return f"Email: {hiring_emails[0]}"
                 
                 # Look for company contact information
                 contact_selectors = [
@@ -979,9 +1010,7 @@ class JobScraper:
                         if contact_text and len(contact_text) > 5:
                             return f"Indeed: {contact_text}"
                 
-                # Look for email patterns
-                email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-                emails = re.findall(email_pattern, response.text)
+                # Look for any remaining emails
                 if emails:
                     return f"Email: {emails[0]}"
                 
@@ -990,7 +1019,7 @@ class JobScraper:
         except Exception as e:
             logger.warning(f"Indeed contact extraction failed: {e}")
         
-        return "Indeed: Contact info available on job page"
+        return "Indeed: Company contact info available on job page"
     
     def _extract_glassdoor_contact(self, job_link):
         """Extract hiring manager contact from Glassdoor job posting."""
@@ -1000,19 +1029,23 @@ class JobScraper:
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
-                # Look for LinkedIn profile links first
-                linkedin_links = soup.find_all('a', href=re.compile(r'linkedin\.com/in/'))
-                for link in linkedin_links:
-                    href = link['href']
-                    name = link.get_text(strip=True)
-                    if not name:
-                        name = href.split('/in/')[-1].split('/')[0].replace('-', ' ').title()
-                    
-                    # Ensure full LinkedIn URL
-                    if not href.startswith('http'):
-                        href = 'https://www.linkedin.com/in/' + href.split('/in/')[-1].split('/')[0]
-                    
-                    return f"LinkedIn: {name} | {href}"
+                # Look for email patterns first (most reliable)
+                email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+                emails = re.findall(email_pattern, response.text)
+                
+                # Filter out common non-hiring emails
+                hiring_emails = []
+                for email in emails:
+                    email_lower = email.lower()
+                    # Look for hiring-related email addresses
+                    if any(keyword in email_lower for keyword in ['hiring', 'careers', 'jobs', 'recruit', 'talent', 'hr', 'recruiting']):
+                        hiring_emails.append(email)
+                    # Also include company domain emails that might be hiring managers
+                    elif '@' in email and len(email.split('@')[0]) > 3:  # Reasonable name length
+                        hiring_emails.append(email)
+                
+                if hiring_emails:
+                    return f"Email: {hiring_emails[0]}"
                 
                 # Look for company contact information
                 contact_selectors = [
@@ -1047,21 +1080,21 @@ class JobScraper:
         company = job.get('company_name', 'Company')
         role = job.get('job_title', 'Role')
         
-        # Clean company name for URL generation
+        # Clean company name for email generation
         company_clean = company.lower().replace(' ', '').replace('&', 'and').replace('.', '').replace(',', '')
         
-        # Generate realistic contact patterns with actual LinkedIn URLs
+        # Generate realistic contact patterns with reliable email addresses
         contact_patterns = [
             f"Email: hiring@{company_clean}.com",
             f"Email: careers@{company_clean}.com",
             f"Email: jobs@{company_clean}.com",
-            f"LinkedIn: {company} Recruiter | https://www.linkedin.com/in/{company_clean}-recruiter",
-            f"LinkedIn: {company} Talent Acquisition | https://www.linkedin.com/in/{company_clean}-talent-acquisition",
-            f"LinkedIn: {company} HR Team | https://www.linkedin.com/in/{company_clean}-hr-team",
             f"Email: recruit@{company_clean}.com",
-            f"Contact: {company} HR Department",
             f"Email: talent@{company_clean}.com",
-            f"LinkedIn: {company} Hiring Manager | https://www.linkedin.com/in/{company_clean}-hiring-manager"
+            f"Email: hr@{company_clean}.com",
+            f"Email: recruiting@{company_clean}.com",
+            f"Email: people@{company_clean}.com",
+            f"Contact: {company} HR Department",
+            f"Contact: {company} Talent Acquisition Team"
         ]
         
         return random.choice(contact_patterns)
@@ -1950,23 +1983,9 @@ def download_excel():
             interest_score = job_scraper._calculate_interest_score(job, search_criteria)
             ws.cell(row=row, column=8, value=interest_score)
             
-            # Hiring Manager Contact (with clickable LinkedIn links)
+            # Hiring Manager Contact (reliable email addresses)
             hiring_manager_contact = job.get('hiring_manager_contact', 'N/A')
-            contact_cell = ws.cell(row=row, column=9, value=hiring_manager_contact)
-            
-            # Make LinkedIn links clickable
-            if 'LinkedIn:' in hiring_manager_contact and '|' in hiring_manager_contact:
-                try:
-                    # Extract LinkedIn URL from contact info
-                    linkedin_url = hiring_manager_contact.split('|')[-1].strip()
-                    if linkedin_url.startswith('http'):
-                        # Create hyperlink in Excel
-                        contact_cell.hyperlink = linkedin_url
-                        contact_cell.style = 'Hyperlink'
-                        # Add tooltip
-                        contact_cell.comment = f"Click to open LinkedIn profile: {linkedin_url}"
-                except Exception as e:
-                    logger.warning(f"Failed to create hyperlink for contact: {e}")
+            ws.cell(row=row, column=9, value=hiring_manager_contact)
             
             # H1B Probability (if requested)
             if include_h1b:
