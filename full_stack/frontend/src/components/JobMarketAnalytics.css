@@ -1,0 +1,327 @@
+.analytics-container {
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+}
+
+.analytics-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.analytics-header h2 {
+    color: #2c3e50;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.last-updated {
+    color: #7f8c8d;
+    font-size: 1rem;
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.analytics-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border-left: 5px solid;
+}
+
+.analytics-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.analytics-card.primary { border-left-color: #3498db; }
+.analytics-card.success { border-left-color: #27ae60; }
+.analytics-card.info { border-left-color: #17a2b8; }
+.analytics-card.warning { border-left-color: #f39c12; }
+.analytics-card.secondary { border-left-color: #6c757d; }
+.analytics-card.dark { border-left-color: #2c3e50; }
+.analytics-card.accent { border-left-color: #e74c3c; }
+.analytics-card.neutral { border-left-color: #9b59b6; }
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.card-header h3 {
+    color: #2c3e50;
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.trend-indicator {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.trend-indicator.positive {
+    color: #27ae60;
+}
+
+.trend-indicator.negative {
+    color: #e74c3c;
+}
+
+.main-stat {
+    margin-bottom: 15px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.stat-change {
+    font-size: 0.9rem;
+    color: #27ae60;
+    font-weight: 500;
+}
+
+.stat-description {
+    color: #7f8c8d;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.industry-list, .skills-list, .region-list {
+    margin-top: 15px;
+}
+
+.industry-item, .skill-item, .region-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.industry-item:last-child,
+.skill-item:last-child,
+.region-item:last-child {
+    border-bottom: none;
+}
+
+.industry-name, .skill-name, .region-name {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.industry-growth {
+    color: #27ae60;
+    font-weight: 600;
+}
+
+.skill-bar {
+    width: 120px;
+    height: 8px;
+    background: #ecf0f1;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0 15px;
+}
+
+.skill-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db, #27ae60);
+    transition: width 0.8s ease;
+    border-radius: 4px;
+}
+
+.skill-demand {
+    font-weight: 600;
+    color: #2c3e50;
+    min-width: 40px;
+}
+
+.remote-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.remote-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.stat-label {
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.region-jobs, .region-salary {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    margin-left: 10px;
+}
+
+.sentiment-indicator {
+    text-align: center;
+}
+
+.sentiment-bar {
+    width: 100%;
+    height: 15px;
+    background: #ecf0f1;
+    border-radius: 7px;
+    overflow: hidden;
+    margin: 15px 0;
+}
+
+.sentiment-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
+    transition: width 0.8s ease;
+    border-radius: 7px;
+}
+
+.sentiment-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.sentiment-description {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-top: 10px;
+}
+
+.analytics-footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 25px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.data-source {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.refresh-btn {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    background: linear-gradient(135deg, #2980b9, #1abc9c);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 50px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #ecf0f1;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-message {
+    text-align: center;
+    padding: 50px;
+    color: #e74c3c;
+}
+
+.retry-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+.retry-btn:hover {
+    background: #c0392b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .analytics-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .analytics-card {
+        padding: 20px;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .analytics-header h2 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .analytics-container {
+        padding: 15px;
+    }
+    
+    .analytics-card {
+        padding: 15px;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .skill-bar {
+        width: 80px;
+        margin: 0 10px;
+    }
+}
