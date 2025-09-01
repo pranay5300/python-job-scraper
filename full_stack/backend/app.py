@@ -2276,50 +2276,6 @@ def get_job_market_analytics():
             'error': 'Failed to retrieve job market analytics'
         }), 500
 
-@app.route('/get_jobs_data', methods=['POST'])
-def get_jobs_data():
-    """Get job data for table display without downloading Excel."""
-    try:
-        data = request.get_json()
-        
-        # Extract search parameters
-        company = data.get('company', '').strip()
-        role = data.get('role', '').strip()
-        location = data.get('location', '').strip()
-        job_type = data.get('job_type', '').strip()
-        h1b_sponsorship = data.get('h1b_sponsorship', False)
-        
-        # Use the same job scraping logic as download_excel
-        job_scraper = JobScraper()
-        jobs = job_scraper.scrape_real_jobs(company, role, location, job_type, h1b_sponsorship)
-        
-        # Ensure minimum jobs
-        if len(jobs) < 20:
-            additional_jobs = job_scraper._generate_high_quality_jobs(company, role, location, job_type, 20 - len(jobs))
-            jobs.extend(additional_jobs)
-        # Validate job links
-        job_scraper.validate_job_links(jobs)
-        
-        # Calculate interest scores
-        for job in jobs:
-            job['interest_score'] = job_scraper._calculate_interest_score(job, company, role, location)
-        
-        # Extract hiring manager contacts
-        job_scraper.extract_hiring_manager_contacts(jobs)
-        
-        return jsonify({
-            'success': True,
-            'jobs': jobs,
-            'message': f'Found {len(jobs)} jobs'
-        })
-        
-    except Exception as e:
-        logger.error(f"Error in get_jobs_data endpoint: {e}")
-        return jsonify({
-            'success': False,
-            'error': 'Failed to retrieve job data'
-        }), 500
-
 if __name__ == '__main__':
     # Initialize database
     if initialize_app():
