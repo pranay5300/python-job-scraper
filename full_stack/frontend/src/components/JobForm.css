@@ -1,0 +1,395 @@
+/* Job Form Styles */
+.job-form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.form-section {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.form-section h2 {
+    color: #2c3e50;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.job-form {
+    display: grid;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select {
+    padding: 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.checkbox-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+}
+
+.submit-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.message {
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.message.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Job Table Styles */
+.job-table-section {
+    margin-top: 30px;
+}
+
+.job-table-container {
+    margin: 30px 0;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.table-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.table-header h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.5rem;
+}
+
+.table-subtitle {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.job-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.job-table th {
+    background: #f8f9fa;
+    color: #2c3e50;
+    font-weight: 600;
+    padding: 15px 12px;
+    text-align: left;
+    border-bottom: 2px solid #dee2e6;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.job-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+.job-row:hover {
+    background: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+.job-title {
+    font-weight: 600;
+    color: #2c3e50;
+    max-width: 200px;
+}
+
+.company {
+    font-weight: 500;
+    color: #495057;
+}
+
+.location {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.salary {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.employment-type {
+    text-transform: capitalize;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.interest-score {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.score-bar {
+    width: 60px;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.score-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff6b6b, #feca57);
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.score-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #495057;
+    min-width: 30px;
+}
+
+.h1b-probability {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.h1b-bar {
+    width: 60px;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.h1b-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #48dbfb, #0abde3);
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.h1b-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #495057;
+    min-width: 30px;
+}
+
+.hiring-contact {
+    text-align: center;
+}
+
+.contact-link {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: #e3f2fd;
+    transition: all 0.2s ease;
+}
+
+.contact-link:hover {
+    background: #bbdefb;
+    color: #1565c0;
+}
+
+.no-contact {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.job-link {
+    text-align: center;
+}
+
+.link-button {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.link-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    color: white;
+}
+
+.table-footer {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    text-align: center;
+    border-top: 1px solid #dee2e6;
+}
+
+.data-info {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 50px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e9ecef;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.no-jobs {
+    text-align: center;
+    padding: 50px;
+    color: #6c757d;
+}
+
+.no-jobs h3 {
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .table-wrapper {
+        max-height: 400px;
+    }
+    
+    .job-table th,
+    .job-table td {
+        padding: 8px 6px;
+        font-size: 0.85rem;
+    }
+    
+    .job-title {
+        max-width: 150px;
+    }
+    
+    .score-bar,
+    .h1b-bar {
+        width: 40px;
+    }
+    
+    .score-text,
+    .h1b-text {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .table-header {
+        padding: 15px;
+    }
+    
+    .table-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    .job-table th,
+    .job-table td {
+        padding: 6px 4px;
+        font-size: 0.8rem;
+    }
+    
+    .link-button {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+}
