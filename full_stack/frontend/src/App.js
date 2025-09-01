@@ -38,7 +38,7 @@ function App() {
       <Header />
       <main className="main-content">
         <JobForm user={user} />
-        <JobMarketAnalytics />
+        <JobMarketAnalytics showWhileLoading={true} />
       </main>
       <BackendStatus />
     </div>
