@@ -4,8 +4,8 @@ import JobForm from './components/JobForm';
 import Auth from './components/Auth';
 import BackendStatus from './components/BackendStatus';
 import EnvironmentInfo from './components/EnvironmentInfo';
-import './App.css';
 import JobMarketAnalytics from './components/JobMarketAnalytics';
+import './App.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -38,6 +38,7 @@ function App() {
       <Header />
       <main className="main-content">
         <JobForm user={user} />
+        <JobMarketAnalytics />
       </main>
       <BackendStatus />
     </div>
