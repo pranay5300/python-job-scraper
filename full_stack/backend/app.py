@@ -2211,6 +2211,71 @@ def initialize_app():
         logger.error(f"Failed to initialize app: {e}")
         return False
 
+@app.route('/job_market_analytics', methods=['GET'])
+def get_job_market_analytics():
+    """Get comprehensive job market analytics data."""
+    try:
+        # Create analytics data (simulated for now)
+        analytics_data = {
+            'unemploymentRate': 3.8,
+            'jobGrowth': {
+                'current': 216000,
+                'previous': 173000,
+                'change': 43000,
+                'growthRate': 2.1
+            },
+            'topIndustries': [
+                {'name': 'Technology', 'growth': 8.5, 'jobs': 45000},
+                {'name': 'Healthcare', 'growth': 6.2, 'jobs': 38000},
+                {'name': 'Finance', 'growth': 4.8, 'jobs': 28000},
+                {'name': 'Manufacturing', 'growth': 3.2, 'jobs': 22000},
+                {'name': 'Education', 'growth': 2.9, 'jobs': 18000}
+            ],
+            'averageSalary': {
+                'current': 75000,
+                'previous': 72000,
+                'growth': 4.2
+            },
+            'remoteWorkTrends': {
+                'remoteJobs': 28,
+                'hybridJobs': 35,
+                'onsiteJobs': 37
+            },
+            'skillsInDemand': [
+                {'name': 'Python', 'demand': 85, 'growth': 12},
+                {'name': 'Data Analysis', 'demand': 78, 'growth': 15},
+                {'name': 'Cloud Computing', 'demand': 72, 'growth': 18},
+                {'name': 'Machine Learning', 'demand': 68, 'growth': 22},
+                {'name': 'Project Management', 'demand': 65, 'growth': 8},
+                {'name': 'Digital Marketing', 'demand': 58, 'growth': 14},
+                {'name': 'Cybersecurity', 'demand': 55, 'growth': 20},
+                {'name': 'UI/UX Design', 'demand': 52, 'growth': 16}
+            ],
+            'regionalHotspots': [
+                {'name': 'San Francisco Bay Area', 'jobGrowth': 12500, 'avgSalary': 125000, 'growthRate': 4.2},
+                {'name': 'New York City', 'jobGrowth': 9800, 'avgSalary': 95000, 'growthRate': 3.8},
+                {'name': 'Austin, TX', 'jobGrowth': 8200, 'avgSalary': 85000, 'growthRate': 5.1},
+                {'name': 'Seattle, WA', 'jobGrowth': 7500, 'avgSalary': 92000, 'growthRate': 3.9},
+                {'name': 'Denver, CO', 'jobGrowth': 6800, 'avgSalary': 78000, 'growthRate': 4.5},
+                {'name': 'Nashville, TN', 'jobGrowth': 5200, 'avgSalary': 65000, 'growthRate': 6.2}
+            ],
+            'marketSentiment': 78,
+            'lastUpdated': datetime.now().isoformat()
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': analytics_data,
+            'message': 'Job market analytics retrieved successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in job market analytics endpoint: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to retrieve job market analytics'
+        }), 500
+
 if __name__ == '__main__':
     # Initialize database
     if initialize_app():
