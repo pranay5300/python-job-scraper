@@ -17,8 +17,6 @@ const JobForm = ({ user }) => {
     });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
-    const [jobs, setJobs] = useState([]);
-    const [showTable, setShowTable] = useState(false);
 
     const backendUrl = 'https://python-job-scraper.onrender.com';
 
@@ -34,8 +32,6 @@ const JobForm = ({ user }) => {
         e.preventDefault();
         setLoading(true);
         setMessage('');
-        setJobs([]);
-        setShowTable(false);
 
         // Prepare data for backend (combine companies and roles)
         const backendData = {
@@ -76,9 +72,6 @@ const JobForm = ({ user }) => {
                 document.body.removeChild(a);
                 
                 setMessage('✅ Excel file downloaded successfully!');
-                
-                // Fetch job data for table display
-                await fetchJobDataForTable(backendData);
             } else {
                 const errorData = await response.json();
                 setMessage(`❌ Error: ${errorData.error || 'Failed to download Excel file'}`);
@@ -87,28 +80,6 @@ const JobForm = ({ user }) => {
             setMessage(`❌ Error: ${error.message}`);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchJobDataForTable = async (backendData) => {
-        try {
-            const response = await fetch(`${backendUrl}/get_jobs_data`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(backendData)
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.jobs) {
-                    setJobs(data.jobs);
-                    setShowTable(true);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching job data for table:', error);
         }
     };
 
@@ -285,123 +256,6 @@ const JobForm = ({ user }) => {
                         {message}
                     </div>
                 )}
-            </div>
-
-            {/* Job Data Table */}
-            {showTable && jobs.length > 0 && (
-                <div className="job-table-section">
-                    <JobDataTable jobs={jobs} loading={false} />
-                </div>
-            )}
-        </div>
-    );
-};
-
-// JobDataTable Component
-const JobDataTable = ({ jobs, loading }) => {
-    if (loading) {
-        return (
-            <div className="job-table-container">
-                <div className="loading-spinner">
-                    <div className="spinner"></div>
-                    <p>Loading job data...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (!jobs || jobs.length === 0) {
-        return (
-            <div className="job-table-container">
-                <div className="no-jobs">
-                    <h3>No jobs found</h3>
-                    <p>Try adjusting your search criteria</p>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="job-table-container">
-            <div className="table-header">
-                <h3>📋 Job Search Results ({jobs.length} jobs found)</h3>
-                <p className="table-subtitle">Click on job links to view full descriptions</p>
-            </div>
-            
-            <div className="table-wrapper">
-                <table className="job-table">
-                    <thead>
-                        <tr>
-                            <th>Job Title</th>
-                            <th>Company</th>
-                            <th>Location</th>
-                            <th>Salary</th>
-                            <th>Employment Type</th>
-                            <th>Interest Score</th>
-                            <th>H1B Probability</th>
-                            <th>Hiring Manager Contact</th>
-                            <th>Job Link</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {jobs.map((job, index) => (
-                            <tr key={index} className="job-row">
-                                <td className="job-title">{job.job_title}</td>
-                                <td className="company">{job.company}</td>
-                                <td className="location">{job.location}</td>
-                                <td className="salary">${job.salary ? job.salary.toLocaleString() : 'N/A'}</td>
-                                <td className="employment-type">{job.employment_type}</td>
-                                <td className="interest-score">
-                                    <div className="score-bar">
-                                        <div 
-                                            className="score-fill" 
-                                            style={{width: `${job.interest_score || 0}%`}}
-                                        ></div>
-                                    </div>
-                                    <span className="score-text">{job.interest_score || 0}%</span>
-                                </td>
-                                <td className="h1b-probability">
-                                    <div className="h1b-bar">
-                                        <div 
-                                            className="h1b-fill" 
-                                            style={{width: `${job.h1b_probability || 0}%`}}
-                                        ></div>
-                                    </div>
-                                    <span className="h1b-text">{job.h1b_probability || 0}%</span>
-                                </td>
-                                <td className="hiring-contact">
-                                    {job.hiring_manager_contact ? (
-                                        <a 
-                                            href={`mailto:${job.hiring_manager_contact}`}
-                                            className="contact-link"
-                                            title="Send email to hiring manager"
-                                        >
-                                            📧 Contact
-                                        </a>
-                                    ) : (
-                                        <span className="no-contact">N/A</span>
-                                    )}
-                                </td>
-                                <td className="job-link">
-                                    <a 
-                                        href={job.job_link} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="link-button"
-                                    >
-                                        🔗 View Job
-                                    </a>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            
-            <div className="table-footer">
-                <p className="data-info">
-                    💡 Tip: Use the Excel download for offline viewing and sorting
-                </p>
             </div>
         </div>
     );
