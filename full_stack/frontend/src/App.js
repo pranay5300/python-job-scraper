@@ -4,7 +4,6 @@ import JobForm from './components/JobForm';
 import Auth from './components/Auth';
 import BackendStatus from './components/BackendStatus';
 import EnvironmentInfo from './components/EnvironmentInfo';
-import JobMarketAnalytics from './components/JobMarketAnalytics';
 import './App.css';
 
 function App() {
@@ -38,7 +37,6 @@ function App() {
       <Header />
       <main className="main-content">
         <JobForm user={user} />
-        <JobMarketAnalytics showWhileLoading={true} />
       </main>
       <BackendStatus />
     </div>
