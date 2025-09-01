@@ -5,6 +5,7 @@ import Auth from './components/Auth';
 import BackendStatus from './components/BackendStatus';
 import EnvironmentInfo from './components/EnvironmentInfo';
 import './App.css';
+import JobMarketAnalytics from './components/JobMarketAnalytics';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
