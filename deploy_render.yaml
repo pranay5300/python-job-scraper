@@ -1,0 +1,94 @@
+services:
+  - type: worker
+    name: linkedin-auto-apply-supply-chain
+    env: python
+    plan: starter
+    
+    buildCommand: |
+      # Install system dependencies for Chrome and ChromeDriver
+      apt-get update
+      apt-get install -y wget gnupg unzip curl
+      
+      # Install Chrome
+      wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+      echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+      apt-get update
+      apt-get install -y google-chrome-stable
+      
+      # Install ChromeDriver
+      CHROMEDRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE)
+      wget -N http://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
+      unzip chromedriver_linux64.zip
+      chmod +x chromedriver
+      mv chromedriver /usr/bin/chromedriver
+      
+      # Install Python dependencies
+      pip install -r requirements_auto_apply.txt
+    
+    startCommand: python main_auto_apply.py --mode scheduled
+    
+    envVars:
+      # LinkedIn Credentials (set these in Render dashboard)
+      - key: LINKEDIN_EMAIL
+        sync: false
+      - key: LINKEDIN_PASSWORD
+        sync: false
+      - key: LINKEDIN_PHONE
+        sync: false
+      
+      # Email Configuration
+      - key: SENDER_EMAIL
+        sync: false
+      - key: SENDER_PASSWORD
+        sync: false
+      - key: RECIPIENT_EMAIL
+        sync: false
+      
+      # Simplify Integration (optional)
+      - key: SIMPLIFY_EMAIL
+        sync: false
+      - key: SIMPLIFY_PASSWORD
+        sync: false
+      - key: SIMPLIFY_API_KEY
+        sync: false
+      
+      # Google Sheets Integration
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+      - key: GOOGLE_SHEET_SHARE_EMAIL
+        sync: false
+      
+      # Safety Settings
+      - key: MAX_APPLICATIONS_PER_DAY
+        value: "20"
+      - key: MAX_APPLICATIONS_PER_HOUR
+        value: "4"
+      - key: MAX_APPLICATIONS_PER_COMPANY
+        value: "2"
+      - key: MIN_DELAY_BETWEEN_APPLICATIONS
+        value: "60"
+      - key: MAX_DELAY_BETWEEN_APPLICATIONS
+        value: "180"
+      
+      # Browser Settings for Server
+      - key: HEADLESS
+        value: "true"
+      - key: CHROME_BIN
+        value: "/usr/bin/google-chrome"
+      - key: CHROMEDRIVER_PATH
+        value: "/usr/bin/chromedriver"
+      
+      # System Settings
+      - key: LOG_LEVEL
+        value: "INFO"
+      - key: RESUME_DIRECTORY
+        value: "resumes"
+      
+    # Health check
+    healthCheckPath: /health
+    
+    # Disk space for logs and data
+    disk:
+      name: auto-apply-data
+      mountPath: /data
+      sizeGB: 1
