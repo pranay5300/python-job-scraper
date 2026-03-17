@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Header = ({ activeModule, onModuleChange }) => {
+const Header = () => {
   return (
     <header className="header">
       <div className="header-container">
@@ -12,24 +12,13 @@ const Header = ({ activeModule, onModuleChange }) => {
         </div>
         
         <nav className="nav-section">
-          <button
-            type="button"
-            className={`module-tab ${activeModule === 'eapcet' ? 'active-module-tab' : ''}`}
-            onClick={() => onModuleChange('eapcet')}
-          >
+          <button type="button" className="module-tab active-module-tab">
             TS EAPCET Mock Exams
-          </button>
-          <button
-            type="button"
-            className={`module-tab ${activeModule === 'jobs' ? 'active-module-tab' : ''}`}
-            onClick={() => onModuleChange('jobs')}
-          >
-            Job Search Tools
           </button>
         </nav>
         
         <div className="user-section">
-          <span className="welcome-text">Practice exams and career tools</span>
+          <span className="welcome-text">Focused practice exam mode</span>
         </div>
       </div>
     </header>
