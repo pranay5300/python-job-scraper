@@ -33,6 +33,10 @@
 - **Intuitive Controls**: Easy-to-use sliders, checkboxes, and form inputs
 - **Real-time Feedback**: Dynamic loading states and progress indicators
 
+## 📘 TS EAPCET Mock Exam Docs
+
+- `TS_EAPCET_FAQ.md` - limits, concurrency estimates, likely issues, and quick fixes
+
 ## 🏗️ Technical Architecture
 
 ### **Frontend (React)**
