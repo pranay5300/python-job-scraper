@@ -16,6 +16,13 @@ from flask_cors import CORS
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 from openpyxl.utils import get_column_letter
+from eapcet_module import (
+    get_overview as get_eapcet_overview,
+    list_mock_papers as list_eapcet_mock_papers,
+    get_mock_paper as get_eapcet_mock_paper,
+    get_solution_sheet as get_eapcet_solution_sheet,
+    grade_mock_paper as grade_eapcet_mock_paper
+)
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -1831,9 +1838,9 @@ def root():
     """Root endpoint with API information."""
     return jsonify({
         "service": "JobDataCamp API",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "status": "healthy",
-        "description": "Job Search API with H1B Predictions and Password Authentication",
+        "description": "Job Search API with H1B Predictions, Authentication, and TS EAPCET mock practice exams",
         "endpoints": {
             "health": "/health",
             "stats": "/stats",
@@ -1842,13 +1849,63 @@ def root():
             "download_excel": "/download_excel",
             "auth_login": "/auth/login",
             "auth_verify": "/auth/verify",
-            "change_password": "/admin/change-password"
+            "change_password": "/admin/change-password",
+            "eapcet_overview": "/eapcet/overview",
+            "eapcet_papers": "/eapcet/papers",
+            "eapcet_paper": "/eapcet/papers/<paper_id>",
+            "eapcet_solutions": "/eapcet/papers/<paper_id>/solutions",
+            "eapcet_submit": "/eapcet/papers/<paper_id>/submit"
         },
         "production_url": "https://python-job-scraper.onrender.com",
         "frontend_compatible": True,
         "cors_enabled": True,
         "authentication": "Password-based (admin configurable)"
     })
+
+
+@app.route('/eapcet/overview', methods=['GET'])
+def eapcet_overview():
+    """Get official-pattern metadata and knowledge-bank overview."""
+    return jsonify(get_eapcet_overview())
+
+
+@app.route('/eapcet/papers', methods=['GET'])
+def eapcet_papers():
+    """List all available mock papers."""
+    papers = list_eapcet_mock_papers()
+    return jsonify({
+        "count": len(papers),
+        "papers": papers
+    })
+
+
+@app.route('/eapcet/papers/<int:paper_id>', methods=['GET'])
+def eapcet_paper(paper_id):
+    """Return one mock paper without answer keys."""
+    try:
+        return jsonify(get_eapcet_mock_paper(paper_id))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+
+
+@app.route('/eapcet/papers/<int:paper_id>/solutions', methods=['GET'])
+def eapcet_solution_sheet(paper_id):
+    """Return the full solution sheet for one mock paper."""
+    try:
+        return jsonify(get_eapcet_solution_sheet(paper_id))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+
+
+@app.route('/eapcet/papers/<int:paper_id>/submit', methods=['POST'])
+def eapcet_submit_paper(paper_id):
+    """Grade a submitted mock paper and return explanations."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        answers = payload.get('answers', {})
+        return jsonify(grade_eapcet_mock_paper(paper_id, answers))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
 
 @app.route('/download_excel', methods=['GET'])
 def download_excel():

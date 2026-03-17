@@ -1,25 +1,35 @@
 import React from 'react';
 
-const Header = () => {
+const Header = ({ activeModule, onModuleChange }) => {
   return (
     <header className="header">
       <div className="header-container">
         <div className="logo-section">
           <div className="logo">
-            <span className="logo-icon">💼</span>
-            <span className="logo-text">JobDataCamp</span>
+            <span className="logo-icon">JP</span>
+            <span className="logo-text">JobDataCamp + TS EAPCET</span>
           </div>
         </div>
         
         <nav className="nav-section">
-          <a href="#jobs" className="nav-link">Find Jobs</a>
-          <a href="#companies" className="nav-link">Companies</a>
-          <a href="#h1b" className="nav-link">H1B Predictions</a>
-          <a href="#resources" className="nav-link">Resources</a>
+          <button
+            type="button"
+            className={`module-tab ${activeModule === 'eapcet' ? 'active-module-tab' : ''}`}
+            onClick={() => onModuleChange('eapcet')}
+          >
+            TS EAPCET Mock Exams
+          </button>
+          <button
+            type="button"
+            className={`module-tab ${activeModule === 'jobs' ? 'active-module-tab' : ''}`}
+            onClick={() => onModuleChange('jobs')}
+          >
+            Job Search Tools
+          </button>
         </nav>
         
         <div className="user-section">
-          <span className="welcome-text">🔐 Professional Job Search</span>
+          <span className="welcome-text">Practice exams and career tools</span>
         </div>
       </div>
     </header>

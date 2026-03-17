@@ -55,8 +55,16 @@ body {
 }
 
 .logo-icon {
-  font-size: 2rem;
+  font-size: 0.95rem;
   margin-right: 0.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
 .logo-text {
@@ -77,6 +85,7 @@ body {
 .nav-section {
   display: flex;
   gap: 2rem;
+  align-items: center;
 }
 
 .nav-link {
@@ -91,6 +100,28 @@ body {
 .nav-link:hover {
   color: #667eea;
   background-color: rgba(102, 126, 234, 0.1);
+}
+
+.module-tab {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #475569;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.module-tab:hover {
+  background: rgba(102, 126, 234, 0.08);
+  color: #3b4fc4;
+}
+
+.active-module-tab {
+  background: rgba(102, 126, 234, 0.12);
+  border-color: rgba(102, 126, 234, 0.2);
+  color: #2f44b7;
 }
 
 .user-section {
@@ -135,6 +166,10 @@ body {
 /* Main Container */
 .main-container {
   min-height: calc(100vh - 80px);
+}
+
+.main-content {
+  padding-bottom: 4rem;
 }
 
 /* Hero Section */

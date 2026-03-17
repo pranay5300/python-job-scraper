@@ -237,13 +237,13 @@ const Auth = ({ onAuthSuccess, onAuthFailure }) => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h2>🔐 JobDataCamp Access</h2>
-          <p>Secure access to job search and H1B prediction tools</p>
+          <h2>Secure Access Portal</h2>
+          <p>Sign in to use TS EAPCET practice exams and job search tools</p>
         </div>
         
         <div className="auth-content">
           <div className="restriction-notice">
-            <span className="lock-icon">🔒</span>
+            <span className="lock-icon">LOCK</span>
             <p><strong>Admin Access:</strong> Enter password to access the system</p>
           </div>
           
@@ -265,7 +265,7 @@ const Auth = ({ onAuthSuccess, onAuthFailure }) => {
                 required
               />
               <button type="submit" className="login-btn">
-                <span className="login-icon">🔑</span>
+                <span className="login-icon">KEY</span>
                 Sign In
               </button>
             </div>
@@ -274,11 +274,11 @@ const Auth = ({ onAuthSuccess, onAuthFailure }) => {
           <div className="auth-info">
             <h4>System Features</h4>
             <ul>
-              <li>🎯 Advanced job search with 10-second processing</li>
-              <li>🛂 USCIS-based H1B sponsorship predictions</li>
-              <li>📊 Real-time web scraping from LinkedIn & Indeed</li>
-              <li>📋 Professional Excel exports with clickable links</li>
-              <li>🔐 Secure password-based authentication</li>
+              <li>10 full-length TS EAPCET engineering mock papers</li>
+              <li>Detailed solution sheets with explanations for each exam</li>
+              <li>Official-pattern exam instructions and subject distribution</li>
+              <li>Advanced job search with H1B prediction tools</li>
+              <li>Secure password-based authentication</li>
             </ul>
           </div>
         </div>
