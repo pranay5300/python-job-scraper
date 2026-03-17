@@ -626,8 +626,6 @@ const EapcetPracticeModule = () => {
               <div>
                 <p className="question-tag-row">
                   <span className="subject-tag">{currentQuestion.subject}</span>
-                  <span className="topic-tag">{currentQuestion.topic}</span>
-                  <span className="difficulty-tag">{currentQuestion.difficulty}</span>
                 </p>
                 <h2>
                   Question {currentQuestion.questionNumber} of {activePaper.totalQuestions}
