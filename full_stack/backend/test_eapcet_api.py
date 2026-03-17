@@ -1,11 +1,12 @@
 import unittest
 import os
 import sys
+import smtplib
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app import app
+from app import app, send_eapcet_solution_email
 
 
 class EapcetApiTestCase(unittest.TestCase):
@@ -77,6 +78,39 @@ class EapcetApiTestCase(unittest.TestCase):
         self.assertTrue(payload['success'])
         self.assertEqual(payload['recipientEmail'], 'student@example.com')
         smtp_mock.assert_called_once()
+
+    @patch.dict(os.environ, {
+        'SMTP_SENDER_EMAIL': 'sender@example.com',
+        'SMTP_SENDER_PASSWORD': 'abcd efgh ijkl mnop',
+        'SMTP_HOST': 'smtp.gmail.com',
+        'SMTP_PORT': '587'
+    }, clear=False)
+    @patch('app.smtplib.SMTP')
+    def test_gmail_password_spaces_are_normalized(self, smtp_mock):
+        result_payload = self.client.post('/eapcet/papers/1/submit', json={'answers': {}}).get_json()
+
+        send_eapcet_solution_email('student@example.com', result_payload)
+
+        smtp_instance = smtp_mock.return_value.__enter__.return_value
+        smtp_instance.login.assert_called_once_with('sender@example.com', 'abcdefghijklmnop')
+
+    @patch.dict(os.environ, {
+        'SMTP_SENDER_EMAIL': 'sender@example.com',
+        'SMTP_SENDER_PASSWORD': 'wrongpassword'
+    }, clear=False)
+    @patch('app.smtplib.SMTP')
+    def test_email_endpoint_returns_actionable_auth_error(self, smtp_mock):
+        smtp_instance = smtp_mock.return_value.__enter__.return_value
+        smtp_instance.login.side_effect = smtplib.SMTPAuthenticationError(535, b'5.7.8 Authentication failed')
+
+        response = self.client.post('/eapcet/papers/1/email-solution', json={
+            'email': 'student@example.com',
+            'answers': {}
+        })
+
+        self.assertEqual(response.status_code, 502)
+        payload = response.get_json()
+        self.assertIn('SMTP authentication failed', payload['error'])
 
 
 if __name__ == '__main__':

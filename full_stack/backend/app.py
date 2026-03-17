@@ -49,12 +49,44 @@ def is_valid_email_address(email):
     return re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email.strip()) is not None
 
 
+def _env_flag(name, default=False):
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    return raw_value.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _normalize_smtp_password(sender_password, smtp_host):
+    """Normalize Gmail app passwords that are sometimes copied with spaces."""
+    if not sender_password:
+        return sender_password
+
+    normalized_password = sender_password.strip()
+    if smtp_host.strip().lower() == 'smtp.gmail.com':
+        normalized_password = ''.join(normalized_password.split())
+
+    return normalized_password
+
+
+def _deliver_email(message, smtp_host, smtp_port, sender_email, sender_password, use_ssl):
+    client_factory = smtplib.SMTP_SSL if use_ssl else smtplib.SMTP
+
+    with client_factory(smtp_host, smtp_port, timeout=60) as smtp:
+        smtp.ehlo()
+        if not use_ssl:
+            smtp.starttls()
+            smtp.ehlo()
+        smtp.login(sender_email, sender_password)
+        smtp.send_message(message)
+
+
 def send_eapcet_solution_email(recipient_email, result_payload):
     """Send the detailed solution sheet through configured SMTP credentials."""
-    sender_email = os.getenv('SMTP_SENDER_EMAIL')
-    sender_password = os.getenv('SMTP_SENDER_PASSWORD')
-    smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
-    smtp_port = int(os.getenv('SMTP_PORT', '587'))
+    sender_email = (os.getenv('SMTP_SENDER_EMAIL') or '').strip()
+    smtp_host = (os.getenv('SMTP_HOST', 'smtp.gmail.com') or 'smtp.gmail.com').strip()
+    sender_password = _normalize_smtp_password(os.getenv('SMTP_SENDER_PASSWORD'), smtp_host)
+    smtp_port = int((os.getenv('SMTP_PORT', '587') or '587').strip())
+    smtp_use_ssl = _env_flag('SMTP_USE_SSL', default=(smtp_port == 465))
 
     if not sender_email or not sender_password:
         raise RuntimeError(
@@ -69,12 +101,39 @@ def send_eapcet_solution_email(recipient_email, result_payload):
     message['To'] = recipient_email
     message.set_content(email_content['body'])
 
-    with smtplib.SMTP(smtp_host, smtp_port, timeout=60) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.ehlo()
-        smtp.login(sender_email, sender_password)
-        smtp.send_message(message)
+    try:
+        _deliver_email(
+            message,
+            smtp_host,
+            smtp_port,
+            sender_email,
+            sender_password,
+            smtp_use_ssl
+        )
+    except smtplib.SMTPAuthenticationError:
+        raise
+    except (TimeoutError, ConnectionError, OSError, smtplib.SMTPServerDisconnected, smtplib.SMTPNotSupportedError) as exc:
+        is_gmail_starttls_attempt = (
+            not smtp_use_ssl and
+            smtp_host.lower() == 'smtp.gmail.com' and
+            smtp_port == 587
+        )
+
+        if is_gmail_starttls_attempt:
+            logger.warning(
+                "Primary Gmail SMTP delivery failed (%s). Retrying with SSL on port 465.",
+                exc
+            )
+            _deliver_email(
+                message,
+                smtp_host,
+                465,
+                sender_email,
+                sender_password,
+                True
+            )
+        else:
+            raise
 
 class FastJobDatabase:
     """Fast job database with SQLite persistence."""
@@ -1971,6 +2030,24 @@ def eapcet_email_solution_sheet(paper_id):
     except RuntimeError as exc:
         logger.error(f"EAPCET email configuration error: {exc}")
         return jsonify({"error": str(exc)}), 503
+    except smtplib.SMTPAuthenticationError as exc:
+        logger.error(f"EAPCET SMTP authentication failed: {exc}")
+        return jsonify({
+            "error": (
+                "SMTP authentication failed. Verify SMTP_SENDER_EMAIL and the Gmail app password. "
+                "If you copied the 16-character app password from Google, paste it into Render without spaces "
+                "or redeploy after updating the environment variable."
+            )
+        }), 502
+    except (TimeoutError, ConnectionError, OSError, smtplib.SMTPException) as exc:
+        logger.error(f"EAPCET SMTP delivery failed: {exc}")
+        return jsonify({
+            "error": (
+                "Email delivery failed while connecting to the SMTP server. "
+                "Check SMTP_HOST/SMTP_PORT, confirm the sender account allows SMTP access, "
+                "and redeploy the backend after changing Render environment variables."
+            )
+        }), 502
     except Exception as exc:
         logger.error(f"EAPCET solution email failed: {exc}")
         return jsonify({"error": "Failed to send the solution sheet email."}), 500
