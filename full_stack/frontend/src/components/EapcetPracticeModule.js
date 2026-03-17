@@ -3,6 +3,8 @@ import './EapcetPracticeModule.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const hasAnswerForQuestion = (answers, questionId) =>
   Object.prototype.hasOwnProperty.call(answers, questionId);
 
@@ -48,6 +50,11 @@ const EapcetPracticeModule = () => {
   const [submitting, setSubmitting] = useState(false);
   const [resultPayload, setResultPayload] = useState(null);
   const [resultFilter, setResultFilter] = useState('all');
+  const [candidateEmail, setCandidateEmail] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [emailPromptPaperId, setEmailPromptPaperId] = useState(null);
+  const [emailPromptError, setEmailPromptError] = useState('');
+  const [emailNotice, setEmailNotice] = useState(null);
 
   const fetchOverview = useCallback(async () => {
     setLoadingOverview(true);
@@ -74,9 +81,10 @@ const EapcetPracticeModule = () => {
     fetchOverview();
   }, [fetchOverview]);
 
-  const startPaper = useCallback(async (paperId) => {
+  const startPaper = useCallback(async (paperId, confirmedEmail) => {
     setLoadingPaperId(paperId);
     setError('');
+    setEmailNotice(null);
 
     try {
       const response = await fetch(`${BACKEND_URL}/eapcet/papers/${paperId}`);
@@ -94,6 +102,7 @@ const EapcetPracticeModule = () => {
       setTimeRemaining(payload.durationMinutes * 60);
       setResultPayload(null);
       setResultFilter('all');
+      setCandidateEmail(confirmedEmail);
       setView('exam');
     } catch (fetchError) {
       console.error('Failed to load paper:', fetchError);
@@ -103,33 +112,25 @@ const EapcetPracticeModule = () => {
     }
   }, []);
 
-  const openSolutionSheet = useCallback(async (paperId) => {
-    setLoadingPaperId(paperId);
-    setError('');
+  const sendSolutionSheetEmail = useCallback(async (paperId, answersPayload, recipientEmail) => {
+    const response = await fetch(`${BACKEND_URL}/eapcet/papers/${paperId}/email-solution`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: recipientEmail,
+        answers: answersPayload
+      })
+    });
 
-    try {
-      const response = await fetch(`${BACKEND_URL}/eapcet/papers/${paperId}/solutions`);
+    const payload = await response.json();
 
-      if (!response.ok) {
-        throw new Error(`Unable to load solution sheet (${response.status})`);
-      }
-
-      const payload = await response.json();
-      setResultPayload({
-        previewOnly: true,
-        paperId: payload.paperId,
-        title: payload.title,
-        inspiredByYear: payload.inspiredByYear,
-        solutions: payload.solutionSheet
-      });
-      setResultFilter('all');
-      setView('results');
-    } catch (fetchError) {
-      console.error('Failed to load solution sheet:', fetchError);
-      setError(fetchError.message || 'Unable to load the solution sheet.');
-    } finally {
-      setLoadingPaperId(null);
+    if (!response.ok) {
+      throw new Error(payload.error || `Unable to email the solution sheet (${response.status})`);
     }
+
+    return payload;
   }, []);
 
   const submitPaper = useCallback(async (autoSubmitted = false) => {
@@ -154,10 +155,40 @@ const EapcetPracticeModule = () => {
       }
 
       const payload = await response.json();
+      let nextEmailNotice = null;
+
+      if (!autoSubmitted && candidateEmail) {
+        const wantsEmail = window.confirm(
+          `Do you want the detailed solution sheet emailed to ${candidateEmail}?`
+        );
+
+        if (wantsEmail) {
+          try {
+            const emailResponse = await sendSolutionSheetEmail(
+              activePaper.paperId,
+              answers,
+              candidateEmail
+            );
+            nextEmailNotice = {
+              type: 'success',
+              message: emailResponse.message
+            };
+          } catch (emailError) {
+            console.error('Failed to email solution sheet:', emailError);
+            nextEmailNotice = {
+              type: 'error',
+              message: emailError.message || 'Unable to email the solution sheet.'
+            };
+          }
+        }
+      }
+
+      setEmailNotice(nextEmailNotice);
       setResultPayload({
         ...payload,
         previewOnly: false,
-        autoSubmitted
+        autoSubmitted,
+        candidateEmail
       });
       setView('results');
     } catch (submitError) {
@@ -166,7 +197,7 @@ const EapcetPracticeModule = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [activePaper, answers, submitting]);
+  }, [activePaper, answers, candidateEmail, sendSolutionSheetEmail, submitting]);
 
   useEffect(() => {
     if (view !== 'exam' || !activePaper) {
@@ -266,6 +297,32 @@ const EapcetPracticeModule = () => {
     setError('');
   };
 
+  const handleStartPaperRequest = (paperId) => {
+    setEmailPromptPaperId(paperId);
+    setEmailInput(candidateEmail);
+    setEmailPromptError('');
+  };
+
+  const closeEmailPrompt = () => {
+    setEmailPromptPaperId(null);
+    setEmailPromptError('');
+  };
+
+  const handleConfirmStart = () => {
+    const trimmedEmail = emailInput.trim();
+
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      setEmailPromptError('Enter a valid email address to start the mock paper.');
+      return;
+    }
+
+    const targetPaperId = emailPromptPaperId;
+    setEmailPromptPaperId(null);
+    setEmailPromptError('');
+    setCandidateEmail(trimmedEmail);
+    startPaper(targetPaperId, trimmedEmail);
+  };
+
   const handleSubmitClick = () => {
     if (window.confirm('Submit this mock paper and open the detailed solution sheet?')) {
       submitPaper(false);
@@ -321,12 +378,18 @@ const EapcetPracticeModule = () => {
               </button>
               <button
                 className="primary-button"
-                onClick={() => startPaper(resultPayload.paperId)}
+                onClick={() => handleStartPaperRequest(resultPayload.paperId)}
               >
                 {resultPayload.previewOnly ? 'Start this paper' : 'Retake this paper'}
               </button>
             </div>
           </div>
+
+          {emailNotice && !resultPayload.previewOnly && (
+            <div className={`inline-notice ${emailNotice.type}`}>
+              {emailNotice.message}
+            </div>
+          )}
 
           <div className="results-summary-grid">
             <div className="metric-card">
@@ -501,6 +564,11 @@ const EapcetPracticeModule = () => {
               <p className="eyebrow">Live mock paper</p>
               <h2>{activePaper.title}</h2>
               <p className="muted">Inspired by the {activePaper.inspiredByYear} paper cycle.</p>
+              {candidateEmail && (
+                <p className="candidate-email-pill">
+                  Candidate email: {candidateEmail}
+                </p>
+              )}
               <div className="timer-card">
                 <span className="metric-label">Time remaining</span>
                 <strong>{formatTime(timeRemaining)}</strong>
@@ -744,18 +812,10 @@ const EapcetPracticeModule = () => {
                   <button
                     className="primary-button"
                     disabled={loadingPaperId === paper.paperId}
-                    onClick={() => startPaper(paper.paperId)}
+                    onClick={() => handleStartPaperRequest(paper.paperId)}
                     type="button"
                   >
                     {loadingPaperId === paper.paperId ? 'Loading...' : 'Start mock paper'}
-                  </button>
-                  <button
-                    className="secondary-button"
-                    disabled={loadingPaperId === paper.paperId}
-                    onClick={() => openSolutionSheet(paper.paperId)}
-                    type="button"
-                  >
-                    View solution sheet
                   </button>
                 </div>
               </article>
@@ -763,6 +823,48 @@ const EapcetPracticeModule = () => {
           </div>
         </div>
       </div>
+
+      {emailPromptPaperId !== null && (
+        <div className="modal-backdrop" role="presentation">
+          <div className="email-modal" role="dialog" aria-modal="true" aria-labelledby="email-modal-title">
+            <p className="eyebrow">Before you start</p>
+            <h3 id="email-modal-title">Enter your email address</h3>
+            <p className="muted">
+              We will use this email address if you choose to receive the solution sheet after submission.
+            </p>
+            <label className="email-modal-label" htmlFor="candidate-email-input">
+              Email address
+            </label>
+            <input
+              id="candidate-email-input"
+              className="email-modal-input"
+              type="email"
+              value={emailInput}
+              onChange={(event) => setEmailInput(event.target.value)}
+              placeholder="you@example.com"
+            />
+            {emailPromptError && (
+              <div className="inline-error">{emailPromptError}</div>
+            )}
+            <div className="paper-card-actions">
+              <button
+                className="primary-button"
+                onClick={handleConfirmStart}
+                type="button"
+              >
+                Continue to mock paper
+              </button>
+              <button
+                className="secondary-button"
+                onClick={closeEmailPrompt}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

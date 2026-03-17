@@ -7,8 +7,10 @@ import logging
 import io
 import time
 import re
+import smtplib
 import requests
 from datetime import datetime
+from email.message import EmailMessage
 from bs4 import BeautifulSoup
 
 from flask import Flask, request, jsonify, send_file
@@ -21,7 +23,8 @@ from eapcet_module import (
     list_mock_papers as list_eapcet_mock_papers,
     get_mock_paper as get_eapcet_mock_paper,
     get_solution_sheet as get_eapcet_solution_sheet,
-    grade_mock_paper as grade_eapcet_mock_paper
+    grade_mock_paper as grade_eapcet_mock_paper,
+    build_solution_sheet_email_content as build_eapcet_solution_email_content
 )
 
 # Set up logging
@@ -37,6 +40,41 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 CORS(app, resources={
     r"/*": {"origins": "*"}
 })
+
+
+def is_valid_email_address(email):
+    """Basic email validation for candidate notifications."""
+    if not email or not isinstance(email, str):
+        return False
+    return re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email.strip()) is not None
+
+
+def send_eapcet_solution_email(recipient_email, result_payload):
+    """Send the detailed solution sheet through configured SMTP credentials."""
+    sender_email = os.getenv('SMTP_SENDER_EMAIL')
+    sender_password = os.getenv('SMTP_SENDER_PASSWORD')
+    smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+    smtp_port = int(os.getenv('SMTP_PORT', '587'))
+
+    if not sender_email or not sender_password:
+        raise RuntimeError(
+            "SMTP email delivery is not configured. Set SMTP_SENDER_EMAIL and SMTP_SENDER_PASSWORD on the server."
+        )
+
+    email_content = build_eapcet_solution_email_content(result_payload, recipient_email)
+
+    message = EmailMessage()
+    message['Subject'] = email_content['subject']
+    message['From'] = sender_email
+    message['To'] = recipient_email
+    message.set_content(email_content['body'])
+
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=60) as smtp:
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(sender_email, sender_password)
+        smtp.send_message(message)
 
 class FastJobDatabase:
     """Fast job database with SQLite persistence."""
@@ -1854,7 +1892,8 @@ def root():
             "eapcet_papers": "/eapcet/papers",
             "eapcet_paper": "/eapcet/papers/<paper_id>",
             "eapcet_solutions": "/eapcet/papers/<paper_id>/solutions",
-            "eapcet_submit": "/eapcet/papers/<paper_id>/submit"
+            "eapcet_submit": "/eapcet/papers/<paper_id>/submit",
+            "eapcet_email_solution": "/eapcet/papers/<paper_id>/email-solution"
         },
         "production_url": "https://python-job-scraper.onrender.com",
         "frontend_compatible": True,
@@ -1906,6 +1945,35 @@ def eapcet_submit_paper(paper_id):
         return jsonify(grade_eapcet_mock_paper(paper_id, answers))
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 404
+
+
+@app.route('/eapcet/papers/<int:paper_id>/email-solution', methods=['POST'])
+def eapcet_email_solution_sheet(paper_id):
+    """Email the completed solution sheet to the candidate."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        recipient_email = (payload.get('email') or '').strip()
+        answers = payload.get('answers', {})
+
+        if not is_valid_email_address(recipient_email):
+            return jsonify({"error": "A valid recipient email address is required."}), 400
+
+        result_payload = grade_eapcet_mock_paper(paper_id, answers)
+        send_eapcet_solution_email(recipient_email, result_payload)
+
+        return jsonify({
+            "success": True,
+            "message": f"Solution sheet emailed to {recipient_email}.",
+            "recipientEmail": recipient_email
+        })
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except RuntimeError as exc:
+        logger.error(f"EAPCET email configuration error: {exc}")
+        return jsonify({"error": str(exc)}), 503
+    except Exception as exc:
+        logger.error(f"EAPCET solution email failed: {exc}")
+        return jsonify({"error": "Failed to send the solution sheet email."}), 500
 
 @app.route('/download_excel', methods=['GET'])
 def download_excel():

@@ -1,6 +1,7 @@
 import unittest
 import os
 import sys
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -52,6 +53,30 @@ class EapcetApiTestCase(unittest.TestCase):
         self.assertEqual(submit_payload['subjectBreakdown']['Mathematics']['correct'], 80)
         self.assertEqual(submit_payload['subjectBreakdown']['Physics']['correct'], 40)
         self.assertEqual(submit_payload['subjectBreakdown']['Chemistry']['correct'], 40)
+
+    @patch.dict(os.environ, {
+        'SMTP_SENDER_EMAIL': 'sender@example.com',
+        'SMTP_SENDER_PASSWORD': 'test-password'
+    }, clear=False)
+    @patch('app.smtplib.SMTP')
+    def test_solution_sheet_email_endpoint(self, smtp_mock):
+        solution_response = self.client.get('/eapcet/papers/1/solutions')
+        solution_payload = solution_response.get_json()
+        answers = {
+            solution['id']: solution['correctOption']
+            for solution in solution_payload['solutionSheet']
+        }
+
+        response = self.client.post('/eapcet/papers/1/email-solution', json={
+            'email': 'student@example.com',
+            'answers': answers
+        })
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload['success'])
+        self.assertEqual(payload['recipientEmail'], 'student@example.com')
+        smtp_mock.assert_called_once()
 
 
 if __name__ == '__main__':

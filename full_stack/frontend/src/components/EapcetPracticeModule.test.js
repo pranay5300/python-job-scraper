@@ -150,6 +150,12 @@ const submitPayload = {
   ]
 };
 
+const emailPayload = {
+  success: true,
+  message: 'Solution sheet emailed to student@example.com.',
+  recipientEmail: 'student@example.com'
+};
+
 describe('EapcetPracticeModule', () => {
   beforeEach(() => {
     global.fetch = jest.fn((url) => {
@@ -174,6 +180,13 @@ describe('EapcetPracticeModule', () => {
         });
       }
 
+      if (url.endsWith('/eapcet/papers/1/email-solution')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => emailPayload
+        });
+      }
+
       return Promise.reject(new Error(`Unhandled fetch request: ${url}`));
     });
 
@@ -184,14 +197,20 @@ describe('EapcetPracticeModule', () => {
     jest.restoreAllMocks();
   });
 
-  test('lets a user start a paper, answer questions, and review results', async () => {
+  test('captures email before starting and emails the solution sheet after submission', async () => {
     render(<EapcetPracticeModule />);
 
     expect(
       await screen.findByText(/Official pattern aligned mock exam workspace/i)
     ).toBeInTheDocument();
 
+    expect(screen.queryByRole('button', { name: /view solution sheet/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /start mock paper/i }));
+    expect(await screen.findByText(/Enter your email address/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), {
+      target: { value: 'student@example.com' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Continue to mock paper/i }));
 
     expect(await screen.findByText(/Question 1 of 2/i)).toBeInTheDocument();
 
@@ -201,12 +220,20 @@ describe('EapcetPracticeModule', () => {
     fireEvent.click(screen.getByRole('button', { name: /Submit paper/i }));
 
     expect(await screen.findByText('1 / 2')).toBeInTheDocument();
+    expect(screen.getByText(/Solution sheet emailed to student@example.com/i)).toBeInTheDocument();
     expect(screen.getByText(/This is an arithmetic progression/i)).toBeInTheDocument();
     expect(screen.getByText(/Use s = ut \+ \(1\/2\)at\^2/i)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/eapcet/papers/1/submit'),
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/eapcet/papers/1/email-solution'),
         expect.objectContaining({ method: 'POST' })
       );
     });

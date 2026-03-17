@@ -270,6 +270,24 @@
   margin: 1rem 0;
 }
 
+.inline-notice {
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  font-weight: 600;
+}
+
+.inline-notice.success {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+.inline-notice.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
 .exam-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -294,6 +312,19 @@
 .focus-card p {
   margin: 0.35rem 0 0;
   color: #475569;
+}
+
+.candidate-email-pill {
+  margin-top: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .question-palette {
@@ -494,6 +525,52 @@
 
 .solution-explanation p + p {
   margin-top: 0.6rem;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1200;
+}
+
+.email-modal {
+  width: min(100%, 480px);
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 24px 54px rgba(15, 23, 42, 0.24);
+  border: 1px solid #dbe7ff;
+  padding: 1.5rem;
+}
+
+.email-modal h3 {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.email-modal-label {
+  display: block;
+  margin: 1rem 0 0.5rem;
+  color: #334155;
+  font-weight: 700;
+}
+
+.email-modal-input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.85rem;
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.email-modal-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
 }
 
 @media (max-width: 1200px) {
