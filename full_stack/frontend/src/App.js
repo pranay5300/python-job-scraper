@@ -5,11 +5,13 @@ import Auth from './components/Auth';
 import BackendStatus from './components/BackendStatus';
 import EnvironmentInfo from './components/EnvironmentInfo';
 import JobMarketAnalytics from './components/JobMarketAnalytics';
+import EapcetPracticeModule from './components/EapcetPracticeModule';
 import './App.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [activeModule, setActiveModule] = useState('eapcet');
 
   const handleAuthSuccess = (userData) => {
     setIsAuthenticated(true);
@@ -35,10 +37,16 @@ function App() {
     <div className="App">
       <EnvironmentInfo />
       <Auth onAuthSuccess={handleAuthSuccess} onAuthFailure={handleAuthFailure} />
-      <Header />
+      <Header activeModule={activeModule} onModuleChange={setActiveModule} />
       <main className="main-content">
-        <JobForm user={user} />
-        <JobMarketAnalytics />
+        {activeModule === 'jobs' ? (
+          <>
+            <JobForm user={user} />
+            <JobMarketAnalytics />
+          </>
+        ) : (
+          <EapcetPracticeModule user={user} />
+        )}
       </main>
       <BackendStatus />
     </div>
