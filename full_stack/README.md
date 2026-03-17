@@ -38,6 +38,7 @@
 - `TS_EAPCET_FAQ.md` - limits, concurrency estimates, likely issues, and quick fixes
 - `TS_EAPCET_INVIGILATOR_INSTRUCTIONS.md` - step-by-step guide for invigilators and lab coordinators
 - `TS_EAPCET_MARKETING_POSTER.html` - one-page bilingual English-Telugu poster for student outreach
+- `TS_EAPCET_MARKETING_POSTER.pdf` - downloadable PDF version of the bilingual poster
 
 ## 🏗️ Technical Architecture
 
