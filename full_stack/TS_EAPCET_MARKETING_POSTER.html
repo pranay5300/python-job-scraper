@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TS EAPCET Mock Exam Poster</title>
+  <style>
+    :root {
+      --navy: #1e2a78;
+      --purple: #5a49df;
+      --pink: #e94fb0;
+      --sky: #eef4ff;
+      --ink: #172036;
+      --green: #12a96b;
+      --white: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #dfe7ff;
+      color: var(--ink);
+    }
+
+    .poster {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background:
+        radial-gradient(circle at top right, rgba(233, 79, 176, 0.16), transparent 25%),
+        radial-gradient(circle at bottom left, rgba(90, 73, 223, 0.16), transparent 30%),
+        linear-gradient(180deg, #f9fbff 0%, #eef3ff 100%);
+      padding: 18mm 16mm;
+      display: flex;
+      flex-direction: column;
+      gap: 12mm;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, var(--navy), var(--purple));
+      color: var(--white);
+      border-radius: 18px;
+      padding: 14mm 12mm;
+      box-shadow: 0 18px 40px rgba(30, 42, 120, 0.22);
+    }
+
+    .hero-top {
+      font-size: 14px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.9;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.15;
+    }
+
+    .hero h2 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.35;
+      font-weight: 600;
+      opacity: 0.96;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 10mm;
+      align-items: center;
+    }
+
+    .cta-box {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 16px;
+      padding: 8mm;
+    }
+
+    .cta-box strong {
+      display: block;
+      font-size: 17px;
+      margin-bottom: 6px;
+    }
+
+    .url {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: var(--white);
+      color: var(--purple);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8mm;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: 18px;
+      padding: 8mm;
+      border: 1px solid #d7e2ff;
+      box-shadow: 0 12px 28px rgba(43, 66, 153, 0.09);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      color: var(--navy);
+      font-size: 21px;
+    }
+
+    .card p,
+    .card li {
+      font-size: 15px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .card ul {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .highlights {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 5mm;
+    }
+
+    .pill {
+      background: linear-gradient(180deg, #ffffff, #f3f7ff);
+      border: 1px solid #d7e2ff;
+      border-radius: 16px;
+      padding: 6mm 4mm;
+      text-align: center;
+    }
+
+    .pill strong {
+      display: block;
+      font-size: 24px;
+      color: var(--purple);
+      margin-bottom: 6px;
+    }
+
+    .pill span {
+      font-size: 13px;
+      color: #44506e;
+      font-weight: 700;
+    }
+
+    .footer-banner {
+      background: linear-gradient(135deg, #fff4fa, #f3edff);
+      border: 1px solid #ecd7ff;
+      border-radius: 18px;
+      padding: 8mm;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6mm;
+    }
+
+    .footer-banner h4 {
+      margin: 0 0 8px;
+      color: var(--pink);
+      font-size: 20px;
+    }
+
+    .tagline {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--green);
+      margin-top: 6px;
+    }
+
+    .small-note {
+      font-size: 12px;
+      color: #5d6987;
+      text-align: center;
+      margin-top: auto;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .poster {
+        margin: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="poster">
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="hero-top">JobDataCamp + TS EAPCET</div>
+          <h1>TS EAPCET Mock Exams for Inter 2nd Year / Class 12 Students</h1>
+          <h2>
+            Practice full-length engineering-pattern mock papers online and improve your speed, confidence, and score.
+          </h2>
+        </div>
+        <div class="cta-box">
+          <strong>Start practicing today</strong>
+          <p>Take mock papers, review explanations, and download your solution sheet PDF instantly.</p>
+          <a class="url" href="https://www.jobdatacamp.com" target="_blank" rel="noreferrer">www.jobdatacamp.com</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="highlights">
+      <div class="pill">
+        <strong>10</strong>
+        <span>Mock Papers</span>
+      </div>
+      <div class="pill">
+        <strong>160</strong>
+        <span>Questions Per Paper</span>
+      </div>
+      <div class="pill">
+        <strong>180</strong>
+        <span>Minutes Practice Time</span>
+      </div>
+      <div class="pill">
+        <strong>PDF</strong>
+        <span>Solution Sheet Download</span>
+      </div>
+    </section>
+
+    <section class="section-grid">
+      <article class="card">
+        <h3>Why students should join</h3>
+        <ul>
+          <li>Practice in the TS EAPCET engineering pattern</li>
+          <li>Learn time management for Mathematics, Physics, and Chemistry</li>
+          <li>Review mistakes with simple explanations</li>
+          <li>Build confidence before the real exam</li>
+          <li>Use on mobile, laptop, or desktop</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h3>Who can use it?</h3>
+        <ul>
+          <li>Inter 2nd Year students</li>
+          <li>Class 12 / 12th grade students</li>
+          <li>TS EAPCET engineering aspirants</li>
+          <li>Junior college and coaching students</li>
+          <li>Teachers running practice sessions in labs</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="footer-banner">
+      <div>
+        <h4>English</h4>
+        <p>
+          Ready for TS EAPCET? Take full mock exams, submit online, review explanations, and download your solution sheet PDF. Perfect for Inter 2nd Year and Class 12 students preparing seriously for engineering admissions.
+        </p>
+        <p class="tagline">Practice smart. Improve speed. Score better.</p>
+      </div>
+
+      <div>
+        <h4>తెలుగు</h4>
+        <p>
+          TS EAPCET కోసం సిద్ధమవుతున్నారా? పూర్తి స్థాయి మాక్ పరీక్షలు రాయండి, వెంటనే ఫలితాలు చూడండి, వివరణలతో సొల్యూషన్ షీట్ PDF డౌన్‌లోడ్ చేసుకోండి. ఇంటర్ 2వ సంవత్సరం మరియు 12వ తరగతి విద్యార్థులకు ఇది చాలా ఉపయోగకరం.
+        </p>
+        <p class="tagline">స్మార్ట్‌గా ప్రాక్టీస్ చేయండి. వేగం పెంచండి. మంచి స్కోర్ సాధించండి.</p>
+      </div>
+    </section>
+
+    <p class="small-note">
+      One-page promotional poster. Suitable for printouts, notice boards, classrooms, labs, and junior college circulation.
+    </p>
+  </main>
+</body>
+</html>
