@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf';
 import './EapcetPracticeModule.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
+const ACCESS_KEY_PREFIX = 'ats';
 
 const hasAnswerForQuestion = (answers, questionId) =>
   Object.prototype.hasOwnProperty.call(answers, questionId);
@@ -44,6 +45,8 @@ const buildPdfFilename = (paperTitle) => {
   return `${safeTitle || 'solution-sheet'}-solution-sheet.pdf`;
 };
 
+const getExpectedAccessKey = (paperId) => `${ACCESS_KEY_PREFIX}${paperId}`;
+
 const EapcetPracticeModule = () => {
   const [overview, setOverview] = useState(null);
   const [view, setView] = useState('dashboard');
@@ -58,6 +61,11 @@ const EapcetPracticeModule = () => {
   const [submitting, setSubmitting] = useState(false);
   const [resultPayload, setResultPayload] = useState(null);
   const [resultFilter, setResultFilter] = useState('all');
+  const [candidateName, setCandidateName] = useState('');
+  const [startFormName, setStartFormName] = useState('');
+  const [startFormPassword, setStartFormPassword] = useState('');
+  const [startGatePaperId, setStartGatePaperId] = useState(null);
+  const [startGateError, setStartGateError] = useState('');
 
   const fetchOverview = useCallback(async () => {
     setLoadingOverview(true);
@@ -84,20 +92,25 @@ const EapcetPracticeModule = () => {
     fetchOverview();
   }, [fetchOverview]);
 
-  const startPaper = useCallback(async (paperId) => {
+  const startPaper = useCallback(async (paperId, candidateNameValue, accessKey) => {
     setLoadingPaperId(paperId);
     setError('');
 
     try {
-      const response = await fetch(`${BACKEND_URL}/eapcet/papers/${paperId}`);
+      const query = new URLSearchParams({
+        access_key: accessKey
+      });
+      const response = await fetch(`${BACKEND_URL}/eapcet/papers/${paperId}?${query.toString()}`);
 
       if (!response.ok) {
-        throw new Error(`Unable to load mock paper (${response.status})`);
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || `Unable to load mock paper (${response.status})`);
       }
 
       const payload = await response.json();
 
       setActivePaper(payload);
+      setCandidateName(candidateNameValue);
       setAnswers({});
       setReviewFlags({});
       setCurrentQuestionIndex(0);
@@ -127,11 +140,16 @@ const EapcetPracticeModule = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ answers })
+        body: JSON.stringify({
+          answers,
+          candidateName,
+          accessKey: getExpectedAccessKey(activePaper.paperId)
+        })
       });
 
       if (!response.ok) {
-        throw new Error(`Unable to submit paper (${response.status})`);
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || `Unable to submit paper (${response.status})`);
       }
 
       const payload = await response.json();
@@ -147,7 +165,7 @@ const EapcetPracticeModule = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [activePaper, answers, submitting]);
+  }, [activePaper, answers, candidateName, submitting]);
 
   useEffect(() => {
     if (view !== 'exam' || !activePaper) {
@@ -240,11 +258,25 @@ const EapcetPracticeModule = () => {
   const goBackToDashboard = () => {
     setView('dashboard');
     setActivePaper(null);
+    setCandidateName('');
     setAnswers({});
     setReviewFlags({});
     setTimeRemaining(null);
     setResultPayload(null);
     setError('');
+  };
+
+  const openStartGate = (paperId) => {
+    setStartGatePaperId(paperId);
+    setStartFormName(candidateName);
+    setStartFormPassword('');
+    setStartGateError('');
+  };
+
+  const closeStartGate = () => {
+    setStartGatePaperId(null);
+    setStartFormPassword('');
+    setStartGateError('');
   };
 
   const downloadSolutionSheetPdf = useCallback(() => {
@@ -298,6 +330,9 @@ const EapcetPracticeModule = () => {
     });
 
     addWrappedBlock(`Inspired by paper cycle: ${resultPayload.inspiredByYear}`);
+    if (resultPayload.candidateName) {
+      addWrappedBlock(`Candidate name: ${resultPayload.candidateName}`);
+    }
     addWrappedBlock(`Score: ${resultPayload.score} / ${resultPayload.maxScore}`);
     addWrappedBlock(`Attempted: ${resultPayload.attempted}`);
     addWrappedBlock(`Unanswered: ${resultPayload.unanswered}`);
@@ -341,6 +376,26 @@ const EapcetPracticeModule = () => {
 
     doc.save(buildPdfFilename(resultPayload.title));
   }, [resultPayload]);
+
+  const handleConfirmStart = () => {
+    const trimmedName = startFormName.trim();
+    const trimmedPassword = startFormPassword.trim().toLowerCase();
+
+    if (!trimmedName) {
+      setStartGateError('Enter your name before starting the mock paper.');
+      return;
+    }
+
+    if (trimmedPassword !== getExpectedAccessKey(startGatePaperId)) {
+      setStartGateError(`Invalid password for Mock Paper ${startGatePaperId}.`);
+      return;
+    }
+
+    const targetPaperId = startGatePaperId;
+    setStartGatePaperId(null);
+    setStartGateError('');
+    startPaper(targetPaperId, trimmedName, trimmedPassword);
+  };
 
   const handleSubmitClick = () => {
     if (window.confirm('Submit this mock paper and open the detailed solution sheet?')) {
@@ -402,12 +457,18 @@ const EapcetPracticeModule = () => {
               )}
               <button
                 className="primary-button"
-                onClick={() => startPaper(resultPayload.paperId)}
+                onClick={() => openStartGate(resultPayload.paperId)}
               >
                 {resultPayload.previewOnly ? 'Start this paper' : 'Retake this paper'}
               </button>
             </div>
           </div>
+
+          {!resultPayload.previewOnly && resultPayload.candidateName && (
+            <div className="candidate-email-pill">
+              Candidate name: {resultPayload.candidateName}
+            </div>
+          )}
 
           <div className="results-summary-grid">
             <div className="metric-card">
@@ -582,6 +643,11 @@ const EapcetPracticeModule = () => {
               <p className="eyebrow">Live mock paper</p>
               <h2>{activePaper.title}</h2>
               <p className="muted">Inspired by the {activePaper.inspiredByYear} paper cycle.</p>
+              {candidateName && (
+                <p className="candidate-email-pill">
+                  Candidate name: {candidateName}
+                </p>
+              )}
               <div className="timer-card">
                 <span className="metric-label">Time remaining</span>
                 <strong>{formatTime(timeRemaining)}</strong>
@@ -823,7 +889,7 @@ const EapcetPracticeModule = () => {
                   <button
                     className="primary-button"
                     disabled={loadingPaperId === paper.paperId}
-                    onClick={() => startPaper(paper.paperId)}
+                    onClick={() => openStartGate(paper.paperId)}
                     type="button"
                   >
                     {loadingPaperId === paper.paperId ? 'Loading...' : 'Start mock paper'}
@@ -834,6 +900,64 @@ const EapcetPracticeModule = () => {
           </div>
         </div>
       </div>
+
+      {startGatePaperId !== null && (
+        <div className="modal-backdrop" role="presentation">
+          <div
+            className="email-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="start-gate-title"
+          >
+            <p className="eyebrow">Before you start</p>
+            <h3 id="start-gate-title">Enter your details for Mock Paper {startGatePaperId}</h3>
+            <p className="muted">
+              Each mock paper is password protected. Enter your name and the paper password to begin.
+            </p>
+            <label className="email-modal-label" htmlFor="candidate-name-input">
+              Candidate name
+            </label>
+            <input
+              id="candidate-name-input"
+              className="email-modal-input"
+              type="text"
+              value={startFormName}
+              onChange={(event) => setStartFormName(event.target.value)}
+              placeholder="Enter your full name"
+            />
+            <label className="email-modal-label" htmlFor="candidate-password-input">
+              Mock paper password
+            </label>
+            <input
+              id="candidate-password-input"
+              className="email-modal-input"
+              type="password"
+              value={startFormPassword}
+              onChange={(event) => setStartFormPassword(event.target.value)}
+              placeholder={`Enter password for Mock Paper ${startGatePaperId}`}
+            />
+            {startGateError && (
+              <div className="inline-error">{startGateError}</div>
+            )}
+            <div className="paper-card-actions">
+              <button
+                className="primary-button"
+                onClick={handleConfirmStart}
+                type="button"
+              >
+                Continue to mock paper
+              </button>
+              <button
+                className="secondary-button"
+                onClick={closeStartGate}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

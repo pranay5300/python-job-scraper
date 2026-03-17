@@ -49,6 +49,40 @@ def is_valid_email_address(email):
     return re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email.strip()) is not None
 
 
+def expected_eapcet_access_key(paper_id):
+    """Return the configured mock-paper access key."""
+    return f"ats{paper_id}"
+
+
+def get_candidate_name(payload):
+    """Extract and normalize candidate name from request payload."""
+    if not payload or not isinstance(payload, dict):
+        return ""
+    return (payload.get('candidateName') or payload.get('candidate_name') or '').strip()
+
+
+def get_request_access_key(payload=None):
+    """Read the access key from query string or JSON payload."""
+    if payload and isinstance(payload, dict):
+        candidate_key = payload.get('accessKey') or payload.get('access_key')
+        if candidate_key:
+            return str(candidate_key).strip()
+
+    return (
+        request.args.get('accessKey') or
+        request.args.get('access_key') or
+        ''
+    ).strip()
+
+
+def validate_eapcet_access(paper_id, payload=None):
+    """Validate the paper-specific access key."""
+    provided_key = get_request_access_key(payload)
+    if provided_key != expected_eapcet_access_key(paper_id):
+        return False
+    return True
+
+
 def _env_flag(name, default=False):
     raw_value = os.getenv(name)
     if raw_value is None:
@@ -1981,6 +2015,10 @@ def eapcet_papers():
 def eapcet_paper(paper_id):
     """Return one mock paper without answer keys."""
     try:
+        if not validate_eapcet_access(paper_id):
+            return jsonify({
+                "error": f"Invalid access key for Mock Paper {paper_id}."
+            }), 403
         return jsonify(get_eapcet_mock_paper(paper_id))
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 404
@@ -1990,6 +2028,10 @@ def eapcet_paper(paper_id):
 def eapcet_solution_sheet(paper_id):
     """Return the full solution sheet for one mock paper."""
     try:
+        if not validate_eapcet_access(paper_id):
+            return jsonify({
+                "error": f"Invalid access key for Mock Paper {paper_id}."
+            }), 403
         return jsonify(get_eapcet_solution_sheet(paper_id))
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 404
@@ -2001,7 +2043,21 @@ def eapcet_submit_paper(paper_id):
     try:
         payload = request.get_json(silent=True) or {}
         answers = payload.get('answers', {})
-        return jsonify(grade_eapcet_mock_paper(paper_id, answers))
+        candidate_name = get_candidate_name(payload)
+
+        if not validate_eapcet_access(paper_id, payload):
+            return jsonify({
+                "error": f"Invalid access key for Mock Paper {paper_id}."
+            }), 403
+
+        if not candidate_name:
+            return jsonify({
+                "error": "Candidate name is required before submitting the exam."
+            }), 400
+
+        result_payload = grade_eapcet_mock_paper(paper_id, answers)
+        result_payload["candidateName"] = candidate_name
+        return jsonify(result_payload)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 404
 
@@ -2014,10 +2070,18 @@ def eapcet_email_solution_sheet(paper_id):
         recipient_email = (payload.get('email') or '').strip()
         answers = payload.get('answers', {})
 
+        if not validate_eapcet_access(paper_id, payload):
+            return jsonify({
+                "error": f"Invalid access key for Mock Paper {paper_id}."
+            }), 403
+
         if not is_valid_email_address(recipient_email):
             return jsonify({"error": "A valid recipient email address is required."}), 400
 
         result_payload = grade_eapcet_mock_paper(paper_id, answers)
+        candidate_name = get_candidate_name(payload)
+        if candidate_name:
+            result_payload["candidateName"] = candidate_name
         send_eapcet_solution_email(recipient_email, result_payload)
 
         return jsonify({

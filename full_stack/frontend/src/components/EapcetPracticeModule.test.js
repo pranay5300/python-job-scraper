@@ -87,6 +87,7 @@ const submitPayload = {
   paperId: 1,
   title: 'Mock Paper 1',
   inspiredByYear: 2015,
+  candidateName: 'Pranay',
   score: 1,
   maxScore: 2,
   attempted: 2,
@@ -160,7 +161,7 @@ describe('EapcetPracticeModule', () => {
         });
       }
 
-      if (url.endsWith('/eapcet/papers/1')) {
+      if (String(url).includes('/eapcet/papers/1?access_key=ats1')) {
         return Promise.resolve({
           ok: true,
           json: async () => paperPayload
@@ -192,6 +193,14 @@ describe('EapcetPracticeModule', () => {
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /start mock paper/i }));
+    expect(await screen.findByText(/Enter your details for Mock Paper 1/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/Enter your full name/i), {
+      target: { value: 'Pranay' }
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Enter password for Mock Paper 1/i), {
+      target: { value: 'ats1' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: /continue to mock paper/i }));
 
     expect(await screen.findByText(/Question 1 of 2/i)).toBeInTheDocument();
 
@@ -201,6 +210,7 @@ describe('EapcetPracticeModule', () => {
     fireEvent.click(screen.getByRole('button', { name: /Submit paper/i }));
 
     expect(await screen.findByText('1 / 2')).toBeInTheDocument();
+    expect(screen.getByText(/Candidate name: Pranay/i)).toBeInTheDocument();
     expect(screen.getByText(/This is an arithmetic progression/i)).toBeInTheDocument();
     expect(screen.getByText(/Use s = ut \+ \(1\/2\)at\^2/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /download solution sheet pdf/i })).toBeInTheDocument();
@@ -211,6 +221,12 @@ describe('EapcetPracticeModule', () => {
         expect.objectContaining({ method: 'POST' })
       );
     });
+
+    const submitRequest = global.fetch.mock.calls.find(([url]) =>
+      String(url).includes('/eapcet/papers/1/submit')
+    );
+    expect(submitRequest[1].body).toContain('"candidateName":"Pranay"');
+    expect(submitRequest[1].body).toContain('"accessKey":"ats1"');
 
     expect(screen.queryByText(/Solution sheet emailed/i)).not.toBeInTheDocument();
   });

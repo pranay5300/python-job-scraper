@@ -74,4 +74,5 @@ test('renders public mock exam dashboard', async () => {
   render(<App />);
   const headingElement = await screen.findByText(/Official pattern aligned mock exam workspace/i);
   expect(headingElement).toBeInTheDocument();
+  expect(screen.queryByText(/job search tools/i)).not.toBeInTheDocument();
 });

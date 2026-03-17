@@ -12,6 +12,7 @@ from app import app, send_eapcet_solution_email
 class EapcetApiTestCase(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
+        self.paper_one_access_key = 'ats1'
 
     def test_overview_matches_official_pattern(self):
         response = self.client.get('/eapcet/overview')
@@ -23,7 +24,7 @@ class EapcetApiTestCase(unittest.TestCase):
         self.assertEqual(payload['knowledgeBank']['totalMockPapers'], 10)
 
     def test_mock_paper_payload_hides_answers(self):
-        response = self.client.get('/eapcet/papers/1')
+        response = self.client.get(f'/eapcet/papers/1?access_key={self.paper_one_access_key}')
         self.assertEqual(response.status_code, 200)
 
         payload = response.get_json()
@@ -34,7 +35,9 @@ class EapcetApiTestCase(unittest.TestCase):
         self.assertEqual(payload['questions'][120]['subject'], 'Chemistry')
 
     def test_solution_sheet_and_perfect_submission(self):
-        solution_response = self.client.get('/eapcet/papers/1/solutions')
+        solution_response = self.client.get(
+            f'/eapcet/papers/1/solutions?access_key={self.paper_one_access_key}'
+        )
         self.assertEqual(solution_response.status_code, 200)
         solution_payload = solution_response.get_json()
         self.assertEqual(len(solution_payload['solutionSheet']), 160)
@@ -45,15 +48,25 @@ class EapcetApiTestCase(unittest.TestCase):
             for solution in solution_payload['solutionSheet']
         }
 
-        submit_response = self.client.post('/eapcet/papers/1/submit', json={'answers': answers})
+        submit_response = self.client.post('/eapcet/papers/1/submit', json={
+            'answers': answers,
+            'candidateName': 'Student One',
+            'accessKey': self.paper_one_access_key
+        })
         self.assertEqual(submit_response.status_code, 200)
 
         submit_payload = submit_response.get_json()
         self.assertEqual(submit_payload['score'], 160)
         self.assertEqual(submit_payload['attempted'], 160)
+        self.assertEqual(submit_payload['candidateName'], 'Student One')
         self.assertEqual(submit_payload['subjectBreakdown']['Mathematics']['correct'], 80)
         self.assertEqual(submit_payload['subjectBreakdown']['Physics']['correct'], 40)
         self.assertEqual(submit_payload['subjectBreakdown']['Chemistry']['correct'], 40)
+
+    def test_mock_paper_requires_correct_password(self):
+        response = self.client.get('/eapcet/papers/1?access_key=wrong-key')
+        self.assertEqual(response.status_code, 403)
+        self.assertIn('Invalid access key', response.get_json()['error'])
 
     @patch.dict(os.environ, {
         'SMTP_SENDER_EMAIL': 'sender@example.com',
@@ -61,7 +74,9 @@ class EapcetApiTestCase(unittest.TestCase):
     }, clear=False)
     @patch('app.smtplib.SMTP')
     def test_solution_sheet_email_endpoint(self, smtp_mock):
-        solution_response = self.client.get('/eapcet/papers/1/solutions')
+        solution_response = self.client.get(
+            f'/eapcet/papers/1/solutions?access_key={self.paper_one_access_key}'
+        )
         solution_payload = solution_response.get_json()
         answers = {
             solution['id']: solution['correctOption']
@@ -70,7 +85,9 @@ class EapcetApiTestCase(unittest.TestCase):
 
         response = self.client.post('/eapcet/papers/1/email-solution', json={
             'email': 'student@example.com',
-            'answers': answers
+            'answers': answers,
+            'candidateName': 'Student One',
+            'accessKey': self.paper_one_access_key
         })
 
         self.assertEqual(response.status_code, 200)
@@ -87,7 +104,11 @@ class EapcetApiTestCase(unittest.TestCase):
     }, clear=False)
     @patch('app.smtplib.SMTP')
     def test_gmail_password_spaces_are_normalized(self, smtp_mock):
-        result_payload = self.client.post('/eapcet/papers/1/submit', json={'answers': {}}).get_json()
+        result_payload = self.client.post('/eapcet/papers/1/submit', json={
+            'answers': {},
+            'candidateName': 'Student One',
+            'accessKey': self.paper_one_access_key
+        }).get_json()
 
         send_eapcet_solution_email('student@example.com', result_payload)
 
@@ -105,7 +126,9 @@ class EapcetApiTestCase(unittest.TestCase):
 
         response = self.client.post('/eapcet/papers/1/email-solution', json={
             'email': 'student@example.com',
-            'answers': {}
+            'answers': {},
+            'candidateName': 'Student One',
+            'accessKey': self.paper_one_access_key
         })
 
         self.assertEqual(response.status_code, 502)

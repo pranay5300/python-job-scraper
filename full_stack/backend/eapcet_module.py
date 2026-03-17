@@ -1022,6 +1022,12 @@ def build_solution_sheet_email_content(result_payload: Dict, recipient_email: st
         f"Recipient: {recipient_email}",
         f"Mock paper: {result_payload['title']}",
         f"Inspired by paper cycle: {result_payload['inspiredByYear']}",
+    ]
+
+    if result_payload.get('candidateName'):
+        lines.append(f"Candidate name: {result_payload['candidateName']}")
+
+    lines.extend([
         f"Score: {result_payload['score']} / {result_payload['maxScore']}",
         f"Attempted: {result_payload['attempted']}",
         f"Unanswered: {result_payload['unanswered']}",
@@ -1030,7 +1036,7 @@ def build_solution_sheet_email_content(result_payload: Dict, recipient_email: st
         "",
         "Subject breakdown",
         "-" * 40
-    ]
+    ])
 
     for subject, stats in subject_breakdown.items():
         lines.extend([
