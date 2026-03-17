@@ -167,6 +167,7 @@ def _make_rng(*parts) -> random.Random:
 def _shuffle_choices(rng: random.Random, correct, distractors: List) -> Tuple[List[str], int]:
     correct_text = _text(correct)
     choices = []
+    filler_offset = 1
 
     for choice in [correct] + distractors:
         text = _text(choice)
@@ -175,12 +176,12 @@ def _shuffle_choices(rng: random.Random, correct, distractors: List) -> Tuple[Li
 
     while len(choices) < 4:
         if isinstance(correct, (int, float)):
-            bump = len(choices) + 1
-            filler = _text(float(correct) + bump)
+            filler = _text(float(correct) + filler_offset)
         else:
-            filler = f"Option {len(choices) + 1}"
+            filler = f"Option {filler_offset}"
         if filler not in choices:
             choices.append(filler)
+        filler_offset += 1
 
     rng.shuffle(choices)
     return choices[:4], choices.index(correct_text)
