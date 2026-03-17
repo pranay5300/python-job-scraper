@@ -223,6 +223,7 @@ describe('EapcetPracticeModule', () => {
     expect(screen.getByText(/Solution sheet emailed to student@example.com/i)).toBeInTheDocument();
     expect(screen.getByText(/This is an arithmetic progression/i)).toBeInTheDocument();
     expect(screen.getByText(/Use s = ut \+ \(1\/2\)at\^2/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /download solution sheet pdf/i })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(

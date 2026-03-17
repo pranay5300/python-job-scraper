@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { jsPDF } from 'jspdf';
 import './EapcetPracticeModule.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://python-job-scraper.onrender.com';
@@ -34,6 +35,15 @@ const buildPreviewBreakdown = (solutions) => {
   });
 
   return summary;
+};
+
+const buildPdfFilename = (paperTitle) => {
+  const safeTitle = (paperTitle || 'solution-sheet')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return `${safeTitle || 'solution-sheet'}-solution-sheet.pdf`;
 };
 
 const EapcetPracticeModule = () => {
@@ -308,6 +318,104 @@ const EapcetPracticeModule = () => {
     setEmailPromptError('');
   };
 
+  const downloadSolutionSheetPdf = useCallback(() => {
+    if (!resultPayload || resultPayload.previewOnly) {
+      return;
+    }
+
+    const doc = new jsPDF({
+      unit: 'pt',
+      format: 'a4'
+    });
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 40;
+    const contentWidth = pageWidth - (margin * 2);
+    let y = margin;
+
+    const ensureSpace = (requiredHeight = 20) => {
+      if (y + requiredHeight > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    const addWrappedBlock = (text, options = {}) => {
+      const {
+        fontSize = 11,
+        bold = false,
+        spacingAfter = 10
+      } = options;
+
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.setFontSize(fontSize);
+      const lines = doc.splitTextToSize(String(text), contentWidth);
+      const blockHeight = lines.length * (fontSize + 3);
+
+      ensureSpace(blockHeight + spacingAfter);
+      doc.text(lines, margin, y);
+      y += blockHeight + spacingAfter;
+    };
+
+    addWrappedBlock('TS EAPCET Engineering Mock Practice', {
+      fontSize: 18,
+      bold: true,
+      spacingAfter: 8
+    });
+    addWrappedBlock(resultPayload.title, {
+      fontSize: 15,
+      bold: true,
+      spacingAfter: 12
+    });
+
+    addWrappedBlock(`Inspired by paper cycle: ${resultPayload.inspiredByYear}`);
+    if (resultPayload.candidateEmail) {
+      addWrappedBlock(`Candidate email: ${resultPayload.candidateEmail}`);
+    }
+    addWrappedBlock(`Score: ${resultPayload.score} / ${resultPayload.maxScore}`);
+    addWrappedBlock(`Attempted: ${resultPayload.attempted}`);
+    addWrappedBlock(`Unanswered: ${resultPayload.unanswered}`);
+    addWrappedBlock(`Overall percentage: ${resultPayload.overallPercentage}%`);
+    addWrappedBlock(
+      `Submission type: ${resultPayload.autoSubmitted ? 'Auto-submitted on timer end' : 'Submitted by user'}`
+    );
+
+    addWrappedBlock('Subject breakdown', {
+      fontSize: 14,
+      bold: true,
+      spacingAfter: 8
+    });
+
+    Object.entries(resultPayload.subjectBreakdown || {}).forEach(([subject, stats]) => {
+      addWrappedBlock(
+        `${subject}: Correct ${stats.correct}, Attempted ${stats.attempted}, Unanswered ${stats.unanswered}, Accuracy ${stats.accuracy}%`
+      );
+    });
+
+    addWrappedBlock('Detailed solution sheet', {
+      fontSize: 14,
+      bold: true,
+      spacingAfter: 8
+    });
+
+    (resultPayload.solutions || []).forEach((solution) => {
+      addWrappedBlock(
+        `Q${solution.questionNumber} | ${solution.subject} | ${solution.topic}`,
+        {
+          fontSize: 12,
+          bold: true,
+          spacingAfter: 6
+        }
+      );
+      addWrappedBlock(solution.prompt, { spacingAfter: 6 });
+      addWrappedBlock(`Your answer: ${solution.selectedOptionText || 'Not answered'}`, { spacingAfter: 6 });
+      addWrappedBlock(`Correct answer: ${solution.correctOptionText}`, { spacingAfter: 6 });
+      addWrappedBlock(`Explanation: ${solution.explanation}`, { spacingAfter: 12 });
+    });
+
+    doc.save(buildPdfFilename(resultPayload.title));
+  }, [resultPayload]);
+
   const handleConfirmStart = () => {
     const trimmedEmail = emailInput.trim();
 
@@ -376,6 +484,11 @@ const EapcetPracticeModule = () => {
               <button className="secondary-button" onClick={goBackToDashboard}>
                 Back to dashboard
               </button>
+              {!resultPayload.previewOnly && (
+                <button className="secondary-button" onClick={downloadSolutionSheetPdf}>
+                  Download solution sheet PDF
+                </button>
+              )}
               <button
                 className="primary-button"
                 onClick={() => handleStartPaperRequest(resultPayload.paperId)}
