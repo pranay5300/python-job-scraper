@@ -1,0 +1,66 @@
+# LinkedIn Auto-Apply Docker Container
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for Chrome and ChromeDriver
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    unzip \
+    curl \
+    xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Chrome
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ChromeDriver
+RUN CHROMEDRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE) \
+    && wget -N http://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip \
+    && unzip chromedriver_linux64.zip \
+    && chmod +x chromedriver \
+    && mv chromedriver /usr/bin/chromedriver \
+    && rm chromedriver_linux64.zip
+
+# Copy requirements and install Python dependencies
+COPY requirements_auto_apply.txt .
+RUN pip install --no-cache-dir -r requirements_auto_apply.txt
+
+# Copy application code
+COPY *.py ./
+COPY resumes/ ./resumes/
+
+# Create data directory for persistence
+RUN mkdir -p /app/data /app/logs
+
+# Set environment variables
+ENV CHROME_BIN=/usr/bin/google-chrome
+ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
+ENV HEADLESS=true
+ENV DISPLAY=:99
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+# Start virtual display\n\
+Xvfb :99 -screen 0 1366x768x16 &\n\
+# Start the application\n\
+python main_auto_apply.py --mode scheduled' > /app/start.sh \
+    && chmod +x /app/start.sh
+
+# Health check
+HEALTHCHECK --interval=30m --timeout=10s --start-period=5m --retries=3 \
+    CMD python -c "import sqlite3; conn = sqlite3.connect('safety_tracking.db'); conn.close()" || exit 1
+
+# Run the application
+CMD ["/app/start.sh"]
+
+# Labels
+LABEL maintainer="LinkedIn Auto-Apply System"
+LABEL description="Automated LinkedIn job applications for supply chain roles"
+LABEL version="1.0"

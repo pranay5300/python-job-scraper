@@ -1,0 +1,44 @@
+services:
+  - type: worker
+    name: mba-job-scraper
+    env: python
+    buildCommand: |
+      # Install Chrome and ChromeDriver for Selenium
+      apt-get update
+      apt-get install -y wget gnupg
+      wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+      echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+      apt-get update
+      apt-get install -y google-chrome-stable
+      
+      # Install ChromeDriver
+      CHROMEDRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE)
+      wget -N http://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
+      unzip chromedriver_linux64.zip
+      chmod +x chromedriver
+      mv chromedriver /usr/bin/chromedriver
+      
+      # Install Python dependencies
+      pip install -r requirements.txt
+    
+    startCommand: python mba_job_scraper.py
+    
+    envVars:
+      - key: SENDER_EMAIL
+        sync: false
+      - key: SENDER_PASSWORD
+        sync: false
+      - key: RECIPIENT_EMAIL
+        sync: false
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+      - key: GOOGLE_SHEET_SHARE_EMAIL
+        sync: false
+      - key: CHROME_BIN
+        value: /usr/bin/google-chrome
+      - key: CHROMEDRIVER_PATH
+        value: /usr/bin/chromedriver
+      - key: RUN_ONCE
+        value: false
+      - key: DAILY_RUN_TIME
+        value: "08:00"

@@ -1,0 +1,36 @@
+selenium==4.15.2
+beautifulsoup4==4.12.2
+requests==2.31.0
+pandas==2.0.3
+gspread==5.12.0
+google-auth==2.23.3
+google-auth-oauthlib==1.1.0
+google-auth-httplib2==0.1.1
+python-dotenv==1.0.0
+schedule==1.2.0
+lxml==4.9.3
+webdriver-manager==4.0.1
+sqlite3
+
+# Optional dependencies for enhanced functionality
+openpyxl==3.1.2
+xlsxwriter==3.1.9
+Pillow==10.0.1
+python-dateutil==2.8.2
+
+# For email functionality
+smtplib
+email
+
+# For data processing
+numpy==1.24.3
+matplotlib==3.7.2
+seaborn==0.12.2
+
+# For web scraping enhancements
+fake-useragent==1.4.0
+undetected-chromedriver==3.5.4
+
+# For logging and monitoring
+psutil==5.9.6
+colorlog==6.7.0

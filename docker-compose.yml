@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  linkedin-auto-apply:
+    build:
+      context: .
+      dockerfile: Dockerfile_auto_apply
+    container_name: linkedin-auto-apply-supply-chain
+    restart: unless-stopped
+    
+    environment:
+      # LinkedIn Credentials
+      - LINKEDIN_EMAIL=${LINKEDIN_EMAIL}
+      - LINKEDIN_PASSWORD=${LINKEDIN_PASSWORD}
+      - LINKEDIN_PHONE=${LINKEDIN_PHONE}
+      
+      # Email Configuration
+      - SENDER_EMAIL=${SENDER_EMAIL}
+      - SENDER_PASSWORD=${SENDER_PASSWORD}
+      - RECIPIENT_EMAIL=${RECIPIENT_EMAIL}
+      
+      # Simplify Integration (optional)
+      - SIMPLIFY_EMAIL=${SIMPLIFY_EMAIL}
+      - SIMPLIFY_PASSWORD=${SIMPLIFY_PASSWORD}
+      - SIMPLIFY_API_KEY=${SIMPLIFY_API_KEY}
+      
+      # Google Sheets Integration
+      - GOOGLE_CREDENTIALS_JSON=${GOOGLE_CREDENTIALS_JSON}
+      - GOOGLE_SHEET_SHARE_EMAIL=${GOOGLE_SHEET_SHARE_EMAIL}
+      
+      # Safety Settings
+      - MAX_APPLICATIONS_PER_DAY=20
+      - MAX_APPLICATIONS_PER_HOUR=4
+      - MAX_APPLICATIONS_PER_COMPANY=2
+      - MIN_DELAY_BETWEEN_APPLICATIONS=60
+      - MAX_DELAY_BETWEEN_APPLICATIONS=180
+      
+      # Browser Settings
+      - HEADLESS=true
+      - CHROME_BIN=/usr/bin/google-chrome
+      - CHROMEDRIVER_PATH=/usr/bin/chromedriver
+      
+      # System Settings
+      - LOG_LEVEL=INFO
+      - RESUME_DIRECTORY=resumes
+    
+    volumes:
+      # Persist data and logs
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./resumes:/app/resumes
+      
+      # Optional: Mount custom config
+      - ./auto_apply_config.json:/app/auto_apply_config.json:ro
+    
+    # Network mode for better browser compatibility
+    network_mode: bridge
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sqlite3; conn = sqlite3.connect('/app/data/safety_tracking.db'); conn.close()"]
+      interval: 30m
+      timeout: 10s
+      retries: 3
+      start_period: 5m
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: Add a monitoring service
+  watchtower:
+    image: containrrr/watchtower
+    container_name: linkedin-auto-apply-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=86400  # Check for updates daily
+    depends_on:
+      - linkedin-auto-apply
+
+volumes:
+  app_data:
+    driver: local
+  app_logs:
+    driver: local
